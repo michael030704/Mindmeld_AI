@@ -1,0 +1,43 @@
+[
+  {
+    "id": "HkAeD7OXMGew35Zvircu96Sc9BC2",
+    "name": "HkAeD7OXMGew35Zvircu96Sc9BC2",
+    "email": "",
+    "joined": "2026-01-04T08:54:01.836Z",
+    "lastSeen": "2026-01-04T08:54:01.836Z",
+    "followers": [],
+    "following": [
+      "c9cx0jtmN5gWzLraN8AuJQzITKC2"
+    ],
+    "notifications": []
+  },
+  {
+    "id": "c9cx0jtmN5gWzLraN8AuJQzITKC2",
+    "name": "c9cx0jtmN5gWzLraN8AuJQzITKC2",
+    "email": "",
+    "joined": "2026-01-04T08:54:06.474Z",
+    "lastSeen": "2026-01-04T08:54:06.474Z",
+    "followers": [
+      "HkAeD7OXMGew35Zvircu96Sc9BC2"
+    ],
+    "following": [],
+    "notifications": [
+      {
+        "id": "srv_notif_1767536743126_c6r",
+        "title": "New follower",
+        "body": "CLASH_ GAMING followed you",
+        "ts": "2026-01-04T14:25:43.126Z",
+        "read": false,
+        "type": "social"
+      },
+      {
+        "id": "srv_notif_1767516846474_x5q",
+        "title": "New message from CLASH_ GAMING",
+        "body": "g",
+        "ts": "2026-01-04T08:54:06.474Z",
+        "read": true,
+        "type": "message"
+      }
+    ]
+  }
+]

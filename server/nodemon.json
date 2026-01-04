@@ -1,0 +1,11 @@
+{
+  "ignore": [
+    "messages.json",
+    "users.json",
+    "*.log",
+    "node_modules/**",
+    "client/**"
+  ],
+  "ext": "js,mjs,cjs,json",
+  "watch": ["index.js","**/*.js"]
+}

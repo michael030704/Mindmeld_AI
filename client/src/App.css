@@ -1,0 +1,476 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+/* Login Page Styles */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.login-card {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-title {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.error-alert {
+  background: #ffebee;
+  color: #c62828;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.login-form {
+  margin-bottom: 20px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.login-button {
+  width: 100%;
+  padding: 12px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.login-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.divider {
+  text-align: center;
+  margin: 20px 0;
+  position: relative;
+}
+
+.divider span {
+  background: white;
+  padding: 0 10px;
+  color: #666;
+  font-size: 14px;
+}
+
+.google-button {
+  width: 100%;
+  padding: 12px;
+  background: white;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.switch-mode {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.switch-button {
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.back-home {
+  text-align: center;
+}
+
+.back-link {
+  color: #666;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+/* Home Page Styles */
+.home-container {
+  min-height: 100vh;
+}
+
+.top-utility {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(90deg, #ffffff 0%, #f8fafc 100%);
+  border-bottom: 1px solid #eef2f7;
+}
+
+.top-utility .brand h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+.brand-sub {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.avatar-img {
+  display: inline-block;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatar-initials {
+  display: inline-block;
+  text-align: center;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #6EE7F7 0%, #7C3AED 50%, #4F46E5 100%);
+  border-radius: 50%;
+  user-select: none;
+}
+
+/* Ensure avatar sizes match circular UI chunks across the app */
+.avatar, .friend-avatar, .message-avatar, .avatar-img, .avatar-initials {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-large, .avatar-large img, .avatar-large .avatar-img, .avatar-large .avatar-initials {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.message-avatar.default-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.utility-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.btn-utility {
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #1f2937;
+  text-decoration: none;
+  font-weight: 600;
+  border: 1px solid #e0e7ff;
+}
+
+.btn-utility.outline {
+  background: transparent;
+  border: 1px solid #c7d2fe;
+}
+
+.welcome-inline {
+  font-size: 0.9rem;
+  color: #374151;
+  margin-left: 0.5rem;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #007bff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.nav-link:hover {
+  background-color: #f0f0f0;
+}
+
+.hero-section {
+  padding: 4rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #2c3e50;
+}
+
+.hero-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #666;
+  margin-bottom: 2rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin: 3rem 0;
+}
+
+.feature-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.feature-card h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.cta-buttons {
+  margin-top: 2rem;
+}
+
+.btn-primary {
+  display: inline-block;
+  background: #007bff;
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}
+
+/* Dashboard Styles */
+.dashboard-container {
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logout-button {
+  padding: 0.5rem 1rem;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background: #c82333;
+}
+
+.dashboard-content {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+}
+
+.section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.section h2 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.data-card {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+.item-form {
+  margin: 1.5rem 0;
+}
+
+.item-form input,
+.item-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.item-form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.items-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.item-card {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 4px;
+  border-left: 4px solid #007bff;
+}
+
+.item-card h3 {
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.item-card small {
+  color: #666;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+/* Sidebar brand logo (Dashboard) */
+.brand-logo-sidebar {
+  width: 42px;
+  height: 42px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Friends view styles */
+.friends-view {
+  padding: 8px 0 16px 0;
+}
+.friends-header h2 { margin: 0 0 4px 0; }
+.friends-header p { margin: 0; color: var(--muted); }
+.friends-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.friend-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #eef2f7;
+}
+.friend-avatar img.friend-avatar-img { width:48px; height:48px; border-radius:8px; object-fit:cover; }
+.friend-body { flex: 1; }
+.friend-body h4 { margin: 0 0 6px 0; }
+.friend-bio { margin: 0; color: #6b7280; font-size: 0.95rem; }
+.friend-actions { display:flex; flex-direction:column; gap:8px; }
+.friend-actions .view-profile-button, .friend-actions .follow-button, .friend-actions .message-button {
+  padding: 8px 10px; border-radius:6px; border:none; cursor:pointer; font-size:0.9rem;
+}
+.friend-actions .view-profile-button { background:#eef2ff; color:#1f2937; }
+.friend-actions .follow-button { background:#10b981; color:#fff; }
+.friend-actions .message-button { background:#f3f4f6; color:#111827; }
+
+/* Under-development small note */
+.friends-header small { display:block; margin-top:6px; color:#9ca3af; font-size:0.85rem; }
