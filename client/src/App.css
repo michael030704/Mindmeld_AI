@@ -14,6 +14,46 @@ body {
   min-height: 100vh;
 }
 
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .login-card {
+    padding: 20px;
+    max-width: 480px;
+    margin: 0 12px;
+  }
+
+  .login-title {
+    font-size: 1.2rem;
+  }
+
+  .form-input {
+    padding: 10px;
+    font-size: 15px;
+  }
+
+  .login-button, .google-button {
+    padding: 10px;
+    font-size: 15px;
+  }
+
+  .hero-section { padding: 2rem 1rem; }
+  .hero-title { font-size: 1.6rem; }
+  .hero-description { font-size: 1rem; }
+
+  .navbar { padding: 0.6rem 1rem; }
+}
+
+@media (max-width: 420px) {
+  .login-container { padding: 12px; }
+  .login-card { padding: 16px; border-radius: 8px; }
+  .login-title { font-size: 1.05rem; }
+  .form-input { padding: 9px; font-size: 14px; }
+  .login-button, .google-button { padding: 10px; font-size: 14px; }
+  .divider span { font-size: 13px; }
+  .google-icon { width: 18px; height: 18px; }
+  .avatar, .avatar-img { width: 32px; height: 32px; }
+}
+
 /* Login Page Styles */
 .login-container {
   display: flex;
