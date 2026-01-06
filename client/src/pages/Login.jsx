@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { sendOtpToEmail, verifyOtpAndReset, verifyOtpOnly } from '../services/api';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { auth } from '../firebase/config';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -14,12 +15,64 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [newPasswordReset, setNewPasswordReset] = useState('');
   const [forgotStep, setForgotStep] = useState(1);
   
   const { signup, login, googleLogin, loading: authLoading, isDevMode, setIsDevMode } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [success, setSuccess] = useState('');
+
+  // Map Firebase / auth errors to friendly messages
+  function friendlyAuthMessage(err, prefix) {
+    // Try to get a canonical Firebase error code. Some SDKs place it on `err.code`,
+    // others include it only inside `err.message` like "Firebase: Error (auth/invalid-credential)."
+    let code = err?.code || err?.response?.data?.error || null;
+    if (!code && err?.message) {
+      const m = err.message.match(/\(auth\/(.*?)\)/);
+      if (m && m[1]) code = `auth/${m[1]}`;
+    }
+    let msg;
+    switch (code) {
+      case 'auth/invalid-credential':
+        msg = 'Invalid credentials';
+        break;
+      case 'auth/wrong-password':
+        msg = 'Wrong password';
+        break;
+      case 'auth/user-not-found':
+        msg = 'No user found with that email';
+        break;
+      case 'auth/invalid-email':
+        msg = 'Invalid email address';
+        break;
+      case 'auth/email-already-in-use':
+        msg = 'Email is already in use';
+        break;
+      case 'auth/weak-password':
+        msg = 'Password should be at least 6 characters';
+        break;
+      case 'auth/network-request-failed':
+        msg = 'Network error. Please check your connection';
+        break;
+      case 'auth/operation-not-allowed':
+        msg = 'Operation not allowed';
+        break;
+      default:
+        // Prefer server-provided error, otherwise sanitize raw messages that may
+        // include SDK prefixes like "Firebase: Error (...)" and internal codes.
+        if (err?.response?.data?.error) {
+          msg = err.response.data.error;
+        } else if (err?.message) {
+          let raw = err.message.replace(/^Firebase:\s*Error\s*/i, '');
+          // remove parenthetical auth codes like (auth/invalid-credential)
+          raw = raw.replace(/\(auth\/[^)]+\)/g, '').trim();
+          msg = raw || 'An error occurred';
+        } else {
+          msg = 'An error occurred';
+        }
+    }
+    return prefix ? `${prefix}: ${msg}` : msg;
+  }
 
 async function handleSubmit(e) {
   e.preventDefault();
@@ -58,7 +111,7 @@ async function handleSubmit(e) {
       navigate('/dashboard', { state: { activeTab: 'dashboard' } });
     }
   } catch (err) {
-    setError(`Failed to ${isLogin ? 'sign in' : 'sign up'}: ${err.message}`);
+    setError(friendlyAuthMessage(err, `Failed to ${isLogin ? 'sign in' : 'sign up'}`));
   }
   setLoading(false);
 }
@@ -83,7 +136,7 @@ async function handleGoogleSignIn() {
     await googleLogin();
     navigate('/dashboard', { state: { activeTab: 'dashboard' } });
   } catch (err) {
-    setError(`Google sign in failed: ${err.message}`);
+    setError(friendlyAuthMessage(err, 'Google sign in failed'));
   }
   setLoading(false);
 }
@@ -94,53 +147,38 @@ async function handleGoogleSignIn() {
       setLoading(true);
       if (!forgotEmail) throw new Error('Please enter your email');
 
-      const res = await sendOtpToEmail(forgotEmail);
-      if (res.code) {
-        setError(`OTP (dev): ${res.code}`);
-      } else {
-        setError('OTP sent to your email');
-      }
+      // Send password reset link which opens the app's reset page where user can set a new password
+      const actionCodeSettings = {
+        url: window.location.origin + '/login',
+        handleCodeInApp: true
+      };
+
+      await sendPasswordResetEmail(auth, forgotEmail, actionCodeSettings);
+      setError('Password reset link sent — check your email and open the link to set a new password.');
       setForgotStep(2);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to send OTP');
+        setError(friendlyAuthMessage(err, 'Failed to send reset link'));
     }
     setLoading(false);
   }
 
-  async function handleVerifyOtpOnly() {
-    try {
-      setError('');
-      setLoading(true);
-      if (!forgotEmail || !otpCode) throw new Error('Please enter the OTP');
+  // OTP flow removed; only password-reset link is supported
 
-      await verifyOtpOnly(forgotEmail, otpCode);
-      setError('OTP verified — enter a new password');
-      setForgotStep(3);
-    } catch (err) {
-      setError(err.response?.data?.error || err.message || 'OTP verification failed');
-    }
-    setLoading(false);
-  }
-
-  async function handleVerifyOtp() {
-    try {
-      setError('');
-      setLoading(true);
-      if (!forgotEmail || !otpCode || !newPasswordReset) throw new Error('Please fill all fields');
-
-      await verifyOtpAndReset(forgotEmail, otpCode, newPasswordReset);
-      setError('Password updated — you can now login');
-      setForgotMode(false);
-      setForgotStep(1);
-      setOtpCode('');
-      setNewPasswordReset('');
-    } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to verify OTP');
-    }
-    setLoading(false);
-  }
+  // Password-reset links open the dedicated /reset-password route; no auto-complete here.
 
   const isLoading = loading || authLoading;
+
+  // Show success message if redirected from reset-password
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (location?.state?.resetSuccess || params.get('resetSuccess') === '1') {
+        setSuccess('Password updated — you can now login');
+        // Clear the location state/query so the message doesn't persist on navigation
+        try { window.history.replaceState({}, document.title, window.location.pathname); } catch (e) {}
+      }
+    } catch (e) {}
+  }, [location]);
 
   return (
     <div className="login-container">
@@ -183,7 +221,21 @@ async function handleGoogleSignIn() {
                 </div>
               )}
         
-        {error && <div className="error-alert">{error}</div>}
+              {error && (
+                <div className="error-alert">
+                  <div style={{ marginBottom: 8 }}>{error}</div>
+                </div>
+              )}
+
+              {success && (
+                <div className="success-alert" style={{ marginBottom: 12, padding: 10, background: '#e6ffed', border: '1px solid #b3f0c6', borderRadius: 6 }}>
+                  {success}
+                </div>
+              )}
+
+              {success && (
+                <div className="success-alert" style={{ marginBottom: 12 }}>{success}</div>
+              )}
         
         {forgotMode ? (
           <div className="forgot-card">
@@ -196,48 +248,22 @@ async function handleGoogleSignIn() {
                   onChange={(e) => setForgotEmail(e.target.value)}
                   className="form-input"
                 />
+
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                   <button onClick={handleSendOtp} disabled={isLoading} className="login-button">
-                    {isLoading ? 'Sending...' : 'Send OTP'}
+                    {isLoading ? 'Sending...' : 'Send reset link'}
                   </button>
                   <button type="button" onClick={() => { setForgotMode(false); setForgotStep(1); setForgotEmail(''); }} className="switch-button">Cancel</button>
                 </div>
               </>
             )}
-
             {forgotStep === 2 && (
               <>
-                <input
-                  type="text"
-                  placeholder="Enter OTP"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  className="form-input"
-                />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={handleVerifyOtpOnly} disabled={isLoading} className="login-button">
-                    {isLoading ? 'Verifying...' : 'Verify OTP'}
-                  </button>
-                  <button type="button" onClick={() => { setForgotMode(false); setForgotStep(1); setOtpCode(''); setForgotEmail(''); }} className="switch-button">Cancel</button>
+                <div style={{ padding: 8, background: '#f5f7ff', borderRadius: 6 }}>
+                  <p style={{ margin: 0 }}>A password reset link was sent to <strong>{forgotEmail}</strong>. Open that link and follow the instructions to set a new password.</p>
                 </div>
-              </>
-            )}
-
-            {forgotStep === 3 && (
-              <>
-                <input
-                  type="password"
-                  placeholder="New password (min 6)"
-                  value={newPasswordReset}
-                  onChange={(e) => setNewPasswordReset(e.target.value)}
-                  minLength={6}
-                  className="form-input"
-                />
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={handleVerifyOtp} disabled={isLoading} className="login-button">
-                    {isLoading ? 'Resetting...' : 'Reset Password'}
-                  </button>
-                  <button type="button" onClick={() => { setForgotMode(false); setForgotStep(1); setNewPasswordReset(''); setOtpCode(''); setForgotEmail(''); }} className="switch-button">Cancel</button>
+                  <button type="button" onClick={() => { setForgotMode(false); setForgotStep(1); setForgotEmail(''); }} className="switch-button">Close</button>
                 </div>
               </>
             )}
@@ -349,4 +375,3 @@ async function handleGoogleSignIn() {
     </div>
   );
 }
-

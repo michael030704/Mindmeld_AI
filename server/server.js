@@ -352,12 +352,9 @@ const otpStore = new Map();
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-let nodemailer;
-try {
-  nodemailer = require('nodemailer');
-} catch (e) {
-  nodemailer = null;
-}
+
+// Nodemailer support removed. Server will not attempt to send SMTP emails.
+// To enable sending emails, install and configure an email provider and re-add mail-sending logic.
 
 // POST /api/auth/send-otp
 app.post('/api/auth/send-otp', async (req, res) => {
@@ -368,34 +365,8 @@ app.post('/api/auth/send-otp', async (req, res) => {
   const expiresAt = Date.now() + (10 * 60 * 1000);
   otpStore.set(email, { code, expiresAt });
 
-  const smtpHost = process.env.SMTP_HOST;
-  if (nodemailer && smtpHost) {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        }
-      });
-
-      const info = await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: email,
-        subject: 'Your password reset code',
-        text: `Your password reset code is: ${code}. It expires in 10 minutes.`
-      });
-
-      console.log('OTP email sent:', info.messageId);
-      return res.json({ message: 'OTP sent' });
-    } catch (err) {
-      console.error('Error sending OTP email:', err);
-    }
-  }
-
-  console.warn('Nodemailer not configured or SMTP not provided — OTP will NOT be returned unless ALLOW_DEV_OTP=true');
+  // Email sending disabled on server. Show development OTP in logs; return code in response only if ALLOW_DEV_OTP=true
+  console.warn('Email sending disabled on server — OTP will NOT be emailed.');
   console.log(`DEV OTP for ${email}: ${code} (expires ${new Date(expiresAt).toISOString()})`);
 
   if (process.env.ALLOW_DEV_OTP === 'true') {

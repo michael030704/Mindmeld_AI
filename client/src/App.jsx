@@ -6,6 +6,7 @@ import PrivateRoute from './components/PrivateRoute'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
+import ResetPassword from './pages/ResetPassword'
 import './App.css'
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route 
                 path="/dashboard" 
                 element={
