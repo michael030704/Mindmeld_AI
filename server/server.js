@@ -322,28 +322,47 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-// Initialize Firebase Admin SDK (optional)
+// ✅ Initialize Firebase Admin SDK — supports env var OR local file
 let admin = null;
 try {
-  const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
-  if (fs.existsSync(serviceAccountPath)) {
-    const serviceAccountRaw = fs.readFileSync(serviceAccountPath, 'utf8');
-    let serviceAccount = null;
-    try { serviceAccount = JSON.parse(serviceAccountRaw); } catch (e) { serviceAccount = null; }
-    if (serviceAccount) {
-      admin = require('firebase-admin');
-      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-      console.log('✅ Firebase Admin initialized');
-    } else {
-      console.warn('⚠️ serviceAccountKey.json exists but could not be parsed — Firebase disabled');
-      admin = null;
+  let serviceAccount = null;
+
+  // 🔑 Option 1: Load from environment variable (Render)
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      console.log('✅ Attempting to initialize Firebase from FIREBASE_SERVICE_ACCOUNT env var');
+    } catch (e) {
+      console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT is not valid JSON:', e.message);
+      serviceAccount = null;
     }
+  }
+
+  // 💻 Option 2: Load from local file (development)
+  if (!serviceAccount) {
+    const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
+    if (fs.existsSync(serviceAccountPath)) {
+      const serviceAccountRaw = fs.readFileSync(serviceAccountPath, 'utf8');
+      try {
+        serviceAccount = JSON.parse(serviceAccountRaw);
+        console.log('✅ Attempting to initialize Firebase from local serviceAccountKey.json');
+      } catch (e) {
+        console.warn('⚠️ serviceAccountKey.json is not valid JSON:', e.message);
+        serviceAccount = null;
+      }
+    }
+  }
+
+  // 🚀 Initialize if we have valid credentials
+  if (serviceAccount) {
+    admin = require('firebase-admin');
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    console.log('✅ Firebase Admin SDK successfully initialized');
   } else {
-    console.warn('⚠️ serviceAccountKey.json not found — Firebase disabled');
-    admin = null;
+    console.warn('⚠️ No valid Firebase credentials found — Firebase features disabled');
   }
 } catch (e) {
-  console.warn('⚠️ Firebase Admin initialization failed:', e && e.message ? e.message : e);
+  console.warn('⚠️ Firebase Admin initialization failed:', e.message || e);
   admin = null;
 }
 
@@ -351,7 +370,6 @@ try {
 const otpStore = new Map();
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
-
 
 // Nodemailer support removed. Server will not attempt to send SMTP emails.
 // To enable sending emails, install and configure an email provider and re-add mail-sending logic.
@@ -552,7 +570,8 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     openaiConfigured: Boolean(process.env.OPENAI_API_KEY),
-    groqConfigured: Boolean(process.env.GROQ_API_KEY)
+    groqConfigured: Boolean(process.env.GROQ_API_KEY),
+    firebaseConfigured: Boolean(admin)
   });
 });
 
@@ -590,6 +609,7 @@ app.post('/api/ai', async (req, res) => {
       });
     }
 
+    // ✅ FIXED: Removed trailing spaces from URL
     const GROQ_CHAT_COMPLETIONS_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
     let fetchFn = global.fetch || require('node-fetch').default;
@@ -678,6 +698,7 @@ app.post('/api/ai', async (req, res) => {
       ? { model, messages, max_tokens: maxTokens } 
       : { model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens };
 
+    // ✅ FIXED: Removed trailing spaces from URL
     const openaiRes = await fetchFn('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {

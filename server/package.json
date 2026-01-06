@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "mind-meld-server",
   "version": "1.0.0",
   "description": "Backend API for Firebase React App",
   "main": "server.js",

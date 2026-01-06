@@ -39,5 +39,38 @@
         "type": "message"
       }
     ]
+  },
+  {
+    "id": "IQZYpZOYZrfACvH7oRudZU2yI6F3",
+    "name": "IQZYpZOYZrfACvH7oRudZU2yI6F3",
+    "email": "",
+    "joined": "2026-01-06T15:53:11.166Z",
+    "lastSeen": "2026-01-06T15:53:11.166Z",
+    "followers": [
+      "4xTQgrFiYOguaLP64PqAksU4VWN2"
+    ],
+    "following": [],
+    "notifications": [
+      {
+        "id": "srv_notif_1767714791202_4tn",
+        "title": "New follower",
+        "body": "John Marl Saragena followed you",
+        "ts": "2026-01-06T15:53:11.202Z",
+        "read": false,
+        "type": "social"
+      }
+    ]
+  },
+  {
+    "id": "4xTQgrFiYOguaLP64PqAksU4VWN2",
+    "name": "4xTQgrFiYOguaLP64PqAksU4VWN2",
+    "email": "",
+    "joined": "2026-01-06T15:53:11.166Z",
+    "lastSeen": "2026-01-06T15:53:11.166Z",
+    "followers": [],
+    "following": [
+      "IQZYpZOYZrfACvH7oRudZU2yI6F3"
+    ],
+    "notifications": []
   }
 ]
