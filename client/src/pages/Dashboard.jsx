@@ -4750,12 +4750,6 @@ useEffect(() => {
                   <h3>Learning Session</h3>
                   <div className="session-controls">
                     <button
-                      onClick={() => setSessionType(sessionType === 'text' ? 'voice' : 'text')}
-                      className="session-type-toggle"
-                    >
-                      {sessionType === 'text' ? '🎤 Voice' : '💬 Text'}
-                    </button>
-                    <button
                       onClick={handleGenerateLearningRecommendations}
                       className="get-recommendations-button"
                     >
