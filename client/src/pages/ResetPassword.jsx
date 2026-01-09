@@ -86,16 +86,16 @@ export default function ResetPassword() {
     }
   };
 
-  if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
+  if (loading) return <div className="loading-container">Loading...</div>;
 
   return (
-    <div style={{ maxWidth: 480, margin: '40px auto', padding: 20 }}>
+    <div className="reset-password-container">
       <h2>Reset your password</h2>
-      {error && <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>}
+      {error && <div className="error-text">{error}</div>}
       {success ? (
-        <div style={{ padding: 12, background: '#e6ffed', border: '1px solid #b3f0c6', borderRadius: 6, marginBottom: 12 }}>
+        <div className="success-box">
           {success}
-          <div style={{ marginTop: 12 }}>
+          <div className="form-action-group">
             <button className="login-button" onClick={() => navigate('/login')}>Go to login</button>
           </div>
         </div>
@@ -103,14 +103,14 @@ export default function ResetPassword() {
         <form onSubmit={handleSubmit}>
           <p>Resetting password for <strong>{email}</strong></p>
           <input type="password" placeholder="New password (min 6)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="form-input" />
-          <div style={{ marginTop: 12 }}>
+          <div className="form-action-group">
             <button type="submit" className="login-button" disabled={loading}>{loading ? 'Saving...' : 'Set new password'}</button>
           </div>
         </form>
       ) : (
         <div>
           <p>Invalid or expired link.</p>
-          <div style={{ marginTop: 12 }}>
+          <div className="form-action-group">
             <button className="switch-button" onClick={() => navigate('/login')}>Back to login</button>
           </div>
         </div>

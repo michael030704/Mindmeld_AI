@@ -223,18 +223,14 @@ async function handleGoogleSignIn() {
         
               {error && (
                 <div className="error-alert">
-                  <div style={{ marginBottom: 8 }}>{error}</div>
+                  <div className="error-text">{error}</div>
                 </div>
               )}
 
               {success && (
-                <div className="success-alert" style={{ marginBottom: 12, padding: 10, background: '#e6ffed', border: '1px solid #b3f0c6', borderRadius: 6 }}>
+                <div className="success-box">
                   {success}
                 </div>
-              )}
-
-              {success && (
-                <div className="success-alert" style={{ marginBottom: 12 }}>{success}</div>
               )}
         
         {forgotMode ? (
@@ -249,7 +245,7 @@ async function handleGoogleSignIn() {
                   className="form-input"
                 />
 
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <div className="form-action-group">
                   <button onClick={handleSendOtp} disabled={isLoading} className="login-button">
                     {isLoading ? 'Sending...' : 'Send reset link'}
                   </button>
@@ -259,10 +255,10 @@ async function handleGoogleSignIn() {
             )}
             {forgotStep === 2 && (
               <>
-                <div style={{ padding: 8, background: '#f5f7ff', borderRadius: 6 }}>
-                  <p style={{ margin: 0 }}>A password reset link was sent to <strong>{forgotEmail}</strong>. Open that link and follow the instructions to set a new password.</p>
+                <div className="reset-email-info">
+                  <p>A password reset link was sent to <strong>{forgotEmail}</strong>. Open that link and follow the instructions to set a new password.</p>
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <div className="form-action-group">
                   <button type="button" onClick={() => { setForgotMode(false); setForgotStep(1); setForgotEmail(''); }} className="switch-button">Close</button>
                 </div>
               </>

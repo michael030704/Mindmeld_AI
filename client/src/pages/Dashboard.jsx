@@ -1840,7 +1840,7 @@ const FollowersModal = ({ open, onClose, followers = [], following = [], users =
   if (!open) return null;
   return (
     <div className="popup-overlay">
-      <div className="popup-modal followers-modal" style={{maxWidth:600}}>
+      <div className="popup-modal followers-modal">
         <div className="popup-header">
           <h3>Followers & Following</h3>
           <button onClick={onClose} className="lp-close">×</button>
@@ -1848,7 +1848,7 @@ const FollowersModal = ({ open, onClose, followers = [], following = [], users =
         <div className="popup-content">
           <div className="followers-columns">
             <div className="followers-column">
-              <h4>Followers <span style={{color:'var(--muted)',fontSize:'0.9em'}}>({followers.length})</span></h4>
+              <h4>Followers <span className="followers-count-label">({followers.length})</span></h4>
               <div className="followers-list">
                   {followers.length === 0 ? <p className="form-label">No followers yet.</p> : (
                     followers.map(f => {
@@ -1860,10 +1860,10 @@ const FollowersModal = ({ open, onClose, followers = [], following = [], users =
                           {img ? (
                             <img src={img} alt={fu.name} />
                           ) : (
-                            <div style={{width:36,height:36}}><DefaultAvatar size={36} name={(fu && (fu.name || fu.displayName || fu.email)) || ''} photoURL={fu && fu.photoURL} /></div>
+                            <div className="avatar-container"><DefaultAvatar size={36} name={(fu && (fu.name || fu.displayName || fu.email)) || ''} photoURL={fu && fu.photoURL} /></div>
                           )}
-                          <div style={{flex:1}}>{fu.name || fu.displayName || (fu.email ? fu.email.split('@')[0] : fu.id)}</div>
-                          <div style={{display:'flex',gap:8}}>
+                          <div className="avatar-name">{fu.name || fu.displayName || (fu.email ? fu.email.split('@')[0] : fu.id)}</div>
+                          <div className="follow-item-container">
                             <button className="follow-button" onClick={async () => { const now = await onToggleFollow(fu.id); try { showToast(now ? `Followed` : `Unfollowed`, 'info'); } catch(e){} }}>{isFollowing ? 'Unfollow' : 'Follow'}</button>
                           </div>
                         </div>
@@ -1873,7 +1873,7 @@ const FollowersModal = ({ open, onClose, followers = [], following = [], users =
               </div>
             </div>
             <div className="followers-column">
-              <h4>Following <span style={{color:'var(--muted)',fontSize:'0.9em'}}>({(following||[]).length})</span></h4>
+              <h4>Following <span className="following-count-label">({(following||[]).length})</span></h4>
               <div className="followers-list">
                   {((following||[]).length === 0) ? <p className="form-label">You are not following anyone.</p> : (
                       (following||[]).map(fid => {
@@ -1884,10 +1884,10 @@ const FollowersModal = ({ open, onClose, followers = [], following = [], users =
                           {img ? (
                             <img src={img} alt={fu.name} />
                           ) : (
-                            <div style={{width:36,height:36}}><DefaultAvatar size={36} name={(fu && (fu.name || fu.displayName || fu.email)) || ''} photoURL={fu && fu.photoURL} /></div>
+                            <div className="avatar-container"><DefaultAvatar size={36} name={(fu && (fu.name || fu.displayName || fu.email)) || ''} photoURL={fu && fu.photoURL} /></div>
                           )}
-                          <div style={{flex:1}}>{fu.name || fu.displayName || (fu.email ? fu.email.split('@')[0] : fu.id)}</div>
-                          <div style={{display:'flex',gap:8}}>
+                          <div className="avatar-name">{fu.name || fu.displayName || (fu.email ? fu.email.split('@')[0] : fu.id)}</div>
+                          <div className="follow-item-container">
                             <button className="follow-button" onClick={async () => { const now = await onToggleFollow(fu.id); showToast(now ? `Followed` : `Unfollowed`, 'info'); }}>Unfollow</button>
                           </div>
                         </div>
@@ -1911,10 +1911,10 @@ const NotificationsModal = ({ open, onClose, notifications = [], onMarkRead = ()
   if (!open) return null;
   return (
     <div className="popup-overlay">
-      <div className="popup-modal notifications-modal" style={{maxWidth:560}}>
+      <div className="popup-modal notifications-modal">
         <div className="popup-header">
           <h3>Notifications</h3>
-          <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <div className="notifications-header-actions">
             <button className="popup-button" onClick={() => { if (typeof onMarkRead === 'function') onMarkRead('all'); }}>Mark all read</button>
             <button onClick={onClose} className="lp-close">×</button>
           </div>
@@ -1924,13 +1924,13 @@ const NotificationsModal = ({ open, onClose, notifications = [], onMarkRead = ()
             <p className="form-label">No notifications</p>
           ) : (
             notifications.map(n => (
-              <div key={n.id} className={`notification-item ${n.read ? 'read' : 'unread'}`} style={{padding:10,display:'flex',gap:12,alignItems:'flex-start',borderBottom:'1px solid var(--border)'}}>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:700}}>{n.title}</div>
-                  <div style={{color:'var(--muted)',fontSize:'0.95em'}}>{n.body}</div>
-                  <div style={{color:'var(--muted)',fontSize:'0.75em',marginTop:6}}>{new Date(n.ts).toLocaleString()}</div>
+              <div key={n.id} className={`notification-item ${n.read ? 'read' : 'unread'}`}>
+                <div className="notification-item-content">
+                  <div className="notification-item-title">{n.title}</div>
+                  <div className="notification-item-body">{n.body}</div>
+                  <div className="notification-item-time">{new Date(n.ts).toLocaleString()}</div>
                 </div>
-                <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                <div className="notification-item-actions">
                   {!n.read && <button className="popup-button primary" onClick={() => onMarkRead(n.id)}>Mark read</button>}
                   <button className="popup-button secondary" onClick={() => onDelete(n.id)}>Delete</button>
                 </div>
@@ -3904,12 +3904,12 @@ useEffect(() => {
         <div className="sidebar-header">
           <div className="app-logo">
             <img src={mindmeldLogo} alt="MindMeld" className="brand-logo-sidebar" />
-            <div style={{display:'flex',flexDirection:'column',marginLeft:8}}>
+            <div className="logo-text-wrapper">
               <span className="logo-text">MindMeld AI</span>
               <span className="logo-beta">BETA</span>
             </div>
           </div>
-          <div style={{marginTop:8}}>
+          <div className="sidebar-theme-switch">
           </div>
           <label className="theme-switch" title="Toggle theme">
             <input aria-label="Toggle dark mode" type="checkbox" checked={theme === 'dark'} onChange={toggleTheme} />
@@ -3928,7 +3928,7 @@ useEffect(() => {
                 {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User'}
               </span>
               <span className="user-status">
-                <span className="status-dot" style={{ backgroundColor: getMoodColor(currentMood) }}></span>
+                <span className="mood-status-dot" style={{ backgroundColor: getMoodColor(currentMood) }}></span>
                 {currentMood} • Lvl {mentorSystem.level}
               </span>
             </div>
@@ -4702,7 +4702,7 @@ useEffect(() => {
             <div className="mentor-header">
               <div className="mentor-avatar">
                 <div className="avatar-gradient">
-                  ✨
+                  <img src={mindmeldLogo} alt="Adaptive AI Mentor" className="mentor-logo-avatar" />
                 </div>
                 <div className="mentor-status">
                   <span className="status-indicator active"></span>

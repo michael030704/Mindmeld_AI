@@ -43,6 +43,62 @@ body {
   .navbar { padding: 0.6rem 1rem; }
 }
 
+.dev-mode-banner {
+  background: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.dev-mode-banner-title {
+  margin: 0;
+  font-size: 14px;
+  color: #0066cc;
+  font-weight: bold;
+}
+
+.dev-mode-banner-subtitle {
+  margin-top: 8px;
+}
+
+.reset-email-info {
+  padding: 8px;
+  background: #f5f7ff;
+  border-radius: 6px;
+  margin: 0;
+}
+
+.success-box {
+  padding: 12px;
+  background: #e6ffed;
+  border: 1px solid #b3f0c6;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.form-action-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.loading-container {
+  padding: 20px;
+}
+
+.reset-password-container {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.error-text {
+  color: red;
+  margin-bottom: 12px;
+}
+
 @media (max-width: 420px) {
   .login-container { padding: 12px; }
   .login-card { padding: 16px; border-radius: 8px; }

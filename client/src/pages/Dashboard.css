@@ -19,6 +19,101 @@
   --input-bg: #0b1220;
 }
 
+.followers-modal {
+  max-width: 600px;
+}
+
+.followers-count-label,
+.following-count-label {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.avatar-container {
+  width: 36px;
+  height: 36px;
+}
+
+.avatar-name {
+  flex: 1;
+}
+
+.follow-item-container {
+  display: flex;
+  gap: 8px;
+}
+
+.notification-item {
+  padding: 10px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--border);
+}
+
+.notification-item-content {
+  flex: 1;
+}
+
+.notification-item-title {
+  font-weight: 700;
+}
+
+.notification-item-body {
+  color: var(--muted);
+  font-size: 0.95em;
+}
+
+.notification-item-time {
+  color: var(--muted);
+  font-size: 0.75em;
+  margin-top: 6px;
+}
+
+.notification-item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.notifications-modal {
+  max-width: 560px;
+}
+
+.notifications-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.logo-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-left: 8px;
+}
+
+.sidebar-theme-switch {
+  margin-top: 8px;
+}
+
+.mood-status-dot {
+  display: inline-block;
+  border-radius: 50%;
+}
+
+.mentor-logo-avatar {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+}
+
+.mentor-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  margin-left: 8px;
+}
+
 /* Ensure important text elements remain readable in dark mode */
 .theme-dark .toast-message,
 .theme-dark .action-label,
