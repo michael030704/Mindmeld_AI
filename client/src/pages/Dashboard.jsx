@@ -4791,7 +4791,7 @@ useEffect(() => {
                         className="send-button"
                         disabled={!mentorMessage.trim()}
                       >
-                        📤
+                      📤
                       </button>
                     </div>
                   ) : (
@@ -5004,11 +5004,9 @@ useEffect(() => {
               <div className="profile-actions">
               <div className="action-section">
                 <div className="action-buttons">
-                  {/* Data management cleared per user request; destructive actions removed */}
+
                 </div>
               </div>
-              {/* Community block: followers displayed above beside Mentor XP — duplicate removed */}
-              {/* Following list removed from profile per request (use Followers modal or Messages view) */}
               <div className="action-section">
                 <h4>Learning Stats</h4>
                 <div className="stats-grid">
