@@ -7,7 +7,7 @@ export const setupDevelopmentAuth = () => {
   
   console.log("🔧 Setting up development authentication mock");
   
-  // Mock Firebase auth for development
+
   window.firebaseMock = {
     auth: () => ({
       currentUser: null,
