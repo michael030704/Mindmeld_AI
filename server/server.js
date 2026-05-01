@@ -333,6 +333,22 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
+// DELETE /api/users - Clear all users (dangerous, for admin use only)
+app.delete('/api/users', async (req, res) => {
+  try {
+    const ok = await writeUsers([]);
+    if (!ok) {
+      console.error('Failed to clear users.json');
+      return res.status(500).json({ error: 'Failed to clear users' });
+    }
+    console.log('Cleared all users from users.json');
+    return res.json({ ok: true, message: 'All users cleared' });
+  } catch (e) {
+    console.error('DELETE /api/users error', e);
+    return res.status(500).json({ error: 'Failed to clear users' });
+  }
+});
+
 // ✅ Initialize Firebase Admin SDK — supports env var OR local file
 let admin = null;
 try {
