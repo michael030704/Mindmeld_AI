@@ -1326,14 +1326,15 @@ export default function Dashboard() {
     if (!u) return u;
     // avatars disabled: do not use stored or server images — force default
     const img = '';
+    const normalizedId = u.id || u.uid || u.userId;
     // ensure followers/following are arrays of ids
     const followersArr = Array.isArray(u.followers) ? u.followers.map(x => (typeof x === 'string' ? x : (x && (x.id||x.userId||x.uid) ? (x.id||x.userId||x.uid) : null))).filter(Boolean) : [];
     const followingArr = Array.isArray(u.following) ? u.following.map(x => (typeof x === 'string' ? x : (x && (x.id||x.userId||x.uid) ? (x.id||x.userId||x.uid) : null))).filter(Boolean) : [];
     // friendly name fallback: prefer explicit name/displayName, then email prefix, then a shortened id
     const friendlyName = u.name || u.displayName || (u.email ? (String(u.email).split('@')[0] || '') : '');
-    const idFallback = u.id ? (String(u.id).length > 8 ? `${String(u.id).slice(0,6)}...` : String(u.id)) : 'Unknown';
+    const idFallback = normalizedId ? (String(normalizedId).length > 8 ? `${String(normalizedId).slice(0,6)}...` : String(normalizedId)) : 'Unknown';
     const name = friendlyName || idFallback;
-    return { ...u, name, displayName: u.displayName || name, profileImage: img, followers: followersArr, following: followingArr };
+    return { ...u, id: normalizedId, name, displayName: u.displayName || name, profileImage: img, followers: followersArr, following: followingArr };
   };
 
   const setUsersNormalized = (arr) => {
@@ -1376,7 +1377,7 @@ export default function Dashboard() {
   const getUserNameFromId = (userId) => {
     if (!userId) return 'Unknown';
     try {
-      const found = (users || []).find(u => u.id === userId);
+      const found = (users || []).find(u => u.id === userId || u.uid === userId || u.userId === userId);
       if (found) {
         if (found.name) return found.name;
         if (found.displayName) return found.displayName;
@@ -2705,7 +2706,7 @@ useEffect(() => {
 
   const openChat = (user) => {
     // normalize user object so downstream code can rely on `.id`
-    const norm = { ...(user || {}), id: user?.id || user?.uid || user?.userId };
+    const norm = normalizeUser({ ...(user || {}), id: user?.id || user?.uid || user?.userId });
     setChatUser(norm);
     // Switch to Messages tab so chat UI is visible
     try { setActiveTab('messages'); } catch (e) {}
