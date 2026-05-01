@@ -1322,6 +1322,23 @@ export default function Dashboard() {
     return `${uid}_${key}`;
   };
 
+  const isPlaceholderName = (name, id) => {
+    if (!name || !id) return false;
+    const trimmedName = String(name).trim();
+    const normalizedId = String(id).trim();
+    if (!trimmedName) return false;
+    return trimmedName === normalizedId
+      || trimmedName === `User ${normalizedId}`
+      || trimmedName === 'User'
+      || trimmedName === 'Anonymous';
+  };
+
+  const getFallbackUserName = (id) => {
+    if (!id) return 'User';
+    const shortId = String(id).length > 8 ? `${String(id).slice(0,6)}...` : String(id);
+    return `User ${shortId}`;
+  };
+
   const normalizeUser = (u) => {
     if (!u) return u;
     // avatars disabled: do not use stored or server images — force default
@@ -1330,11 +1347,11 @@ export default function Dashboard() {
     // ensure followers/following are arrays of ids
     const followersArr = Array.isArray(u.followers) ? u.followers.map(x => (typeof x === 'string' ? x : (x && (x.id||x.userId||x.uid) ? (x.id||x.userId||x.uid) : null))).filter(Boolean) : [];
     const followingArr = Array.isArray(u.following) ? u.following.map(x => (typeof x === 'string' ? x : (x && (x.id||x.userId||x.uid) ? (x.id||x.userId||x.uid) : null))).filter(Boolean) : [];
-    // friendly name fallback: prefer explicit name/displayName, then email prefix, then a shortened id
-    const friendlyName = u.name || u.displayName || (u.email ? (String(u.email).split('@')[0] || '') : '');
-    const idFallback = normalizedId ? (String(normalizedId).length > 8 ? `${String(normalizedId).slice(0,6)}...` : String(normalizedId)) : 'Unknown';
-    const name = friendlyName || idFallback;
-    return { ...u, id: normalizedId, name, displayName: u.displayName || name, profileImage: img, followers: followersArr, following: followingArr };
+    const nameValue = isPlaceholderName(u.name, normalizedId) ? '' : (u.name || '');
+    const displayNameValue = isPlaceholderName(u.displayName, normalizedId) ? '' : (u.displayName || '');
+    const friendlyName = nameValue || displayNameValue || (u.email ? (String(u.email).split('@')[0] || '') : '');
+    const name = friendlyName || (u.email ? (String(u.email).split('@')[0] || getFallbackUserName(normalizedId)) : getFallbackUserName(normalizedId));
+    return { ...u, id: normalizedId, name, displayName: displayNameValue || name, profileImage: img, followers: followersArr, following: followingArr };
   };
 
   const setUsersNormalized = (arr) => {
@@ -1373,22 +1390,22 @@ export default function Dashboard() {
     } catch(e) { try { console.warn('setUsersNormalized failed to normalize users', e); } catch(_){} }
   };
 
-  // Helper to resolve a user's display name from id -> name -> email prefix -> id
+  // Helper to resolve a user's display name from id -> name -> email prefix -> fallback
   const getUserNameFromId = (userId) => {
     if (!userId) return 'Unknown';
     try {
       const found = (users || []).find(u => u.id === userId || u.uid === userId || u.userId === userId);
       if (found) {
-        if (found.name) return found.name;
-        if (found.displayName) return found.displayName;
-        if (found.email) return (String(found.email).split('@')[0] || userId);
+        const nameValue = isPlaceholderName(found.name, found.id) ? '' : (found.name || '');
+        const displayNameValue = isPlaceholderName(found.displayName, found.id) ? '' : (found.displayName || '');
+        if (nameValue) return nameValue;
+        if (displayNameValue) return displayNameValue;
+        if (found.email) return (String(found.email).split('@')[0] || getFallbackUserName(userId));
       }
-      // if no matching user, try to make a readable fallback from an email-like id
       if (String(userId).includes('@')) return String(userId).split('@')[0];
-      // otherwise shorten long ids for display
-      return String(userId).length > 8 ? `${String(userId).slice(0,6)}...` : String(userId);
+      return getFallbackUserName(userId);
     } catch (e) {
-      return userId;
+      return getFallbackUserName(userId);
     }
   };
 
@@ -1970,16 +1987,18 @@ useEffect(() => {
       };
 
       // 1. POST to /api/users so server saves it
-      // NOTE: temporarily disabled because backend endpoint may be returning 500 errors
-      // try {
-      //   await fetchWithFallback('/api/users', {
-      //     method: 'POST',
-      //     headers: { 'Content-Type': 'application/json' },
-      //     body: JSON.stringify(profile)
-      //   });
-      // } catch (postErr) {
-      //   console.warn('Failed to POST user to server', postErr);
-      // }
+      try {
+        const postResp = await fetchWithFallback('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profile)
+        });
+        if (!postResp.ok) {
+          console.warn('Failed to POST user to server', postResp.status, postResp.statusText);
+        }
+      } catch (postErr) {
+        console.warn('Failed to POST user to server', postErr);
+      }
 
       // 2. THEN fetch fresh users list from server (authoritative)
       try {
