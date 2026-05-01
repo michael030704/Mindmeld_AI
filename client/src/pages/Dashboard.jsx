@@ -237,6 +237,53 @@ const QuickAction = ({ icon, label, onClick, color = 'primary' }) => (
   </button>
 );
 
+// Followers Modal Component
+const FollowersModal = ({ open, onClose, followers, following, users, onToggleFollow, followingIds }) => {
+  const [activeTab, setActiveTab] = useState('followers');
+  if (!open) return null;
+  const list = activeTab === 'followers' ? followers : following;
+  return (
+    <div className="popup-overlay">
+      <div className="popup-modal followers-modal">
+        <div className="popup-header">
+          <h3>{activeTab === 'followers' ? 'Followers' : 'Following'}</h3>
+          <button onClick={onClose} className="lp-close">×</button>
+        </div>
+        <div className="popup-content">
+          <div className="modal-tabs">
+            <button className={`tab-button ${activeTab === 'followers' ? 'active' : ''}`} onClick={() => setActiveTab('followers')}>
+              Followers ({followers.length})
+            </button>
+            <button className={`tab-button ${activeTab === 'following' ? 'active' : ''}`} onClick={() => setActiveTab('following')}>
+              Following ({following.length})
+            </button>
+          </div>
+          <div className="followers-list">
+            {list.length > 0 ? list.map(u => (
+              <div key={u.id} className="follower-item">
+                <DefaultAvatar size={40} name={u.name || getUserNameFromId(u.id)} />
+                <div className="follower-info">
+                  <span className="follower-name">{u.name || getUserNameFromId(u.id)}</span>
+                  {u.bio && <span className="follower-bio">{u.bio}</span>}
+                </div>
+                {u.id !== currentUser?.uid && (
+                  <button onClick={() => onToggleFollow(u.id)} className={`follow-button ${followingIds.includes(u.id) ? 'following' : ''}`}>
+                    {followingIds.includes(u.id) ? 'Unfollow' : 'Follow'}
+                  </button>
+                )}
+              </div>
+            )) : (
+              <div className="empty-state">
+                <p>No {activeTab} yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Enhanced Mentor Message Component
 const MentorMessage = ({ message, isTyping = false, onActionClick = () => {}, onFollowUpClick = () => {} }) => {
   if (isTyping) {
@@ -3859,7 +3906,7 @@ useEffect(() => {
   </div>
 )}
       {/* Followers & Notifications modals */}
-      <FollowersModal open={showFollowersModal} onClose={closeFollowersModal} followers={followers} following={following} users={users} onToggleFollow={toggleFollow} />
+      <FollowersModal open={showFollowersModal} onClose={closeFollowersModal} followers={followers} following={following} users={users} onToggleFollow={toggleFollow} followingIds={followingIds} />
       <NotificationsModal
         open={showNotifications}
         onClose={closeNotifications}
@@ -5026,6 +5073,10 @@ useEffect(() => {
                       <div className="stat-item" style={{cursor:'pointer'}} onClick={openFollowersModal} title="View followers">
                         <span className="stat-number">{followers.length}</span>
                         <span className="stat-label">Followers</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-number">{following.length}</span>
+                        <span className="stat-label">Following</span>
                       </div>
                 </div>
               </div>
