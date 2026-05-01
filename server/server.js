@@ -101,7 +101,17 @@ async function writeUsers(users) {
     return false;
   }
 }
-
+const normalizeServerUserName = (rawName, id, email) => {
+  const name = typeof rawName === 'string' ? rawName.trim() : '';
+  const normalizedId = id ? String(id).trim() : '';
+  if (name && normalizedId && name !== normalizedId && name !== `User ${normalizedId}`) {
+    return name;
+  }
+  if (email && String(email).trim()) {
+    return String(email).split('@')[0];
+  }
+  return 'User';
+};
 // GET all users
 app.get('/api/users', async (req, res) => {
   try {
@@ -122,13 +132,13 @@ app.post('/api/users/:id/follow', async (req, res) => {
     // Ensure target user exists; create placeholder if missing
     let tIdx = users.findIndex(u => u.id === targetId);
     if (tIdx === -1) {
-      users.push({ id: targetId, name: targetId, email: '', joined: new Date().toISOString(), lastSeen: new Date().toISOString(), followers: [], following: [], notifications: [] });
+      users.push({ id: targetId, name: 'User', email: '', joined: new Date().toISOString(), lastSeen: new Date().toISOString(), followers: [], following: [], notifications: [] });
       tIdx = users.length - 1;
     }
     // Ensure follower user exists; create placeholder if missing
     let fIdx = users.findIndex(u => u.id === followerId);
     if (fIdx === -1) {
-      users.push({ id: followerId, name: followerId, email: '', joined: new Date().toISOString(), lastSeen: new Date().toISOString(), followers: [], following: [], notifications: [] });
+      users.push({ id: followerId, name: 'User', email: '', joined: new Date().toISOString(), lastSeen: new Date().toISOString(), followers: [], following: [], notifications: [] });
       fIdx = users.length - 1;
     }
     users[tIdx].followers = Array.isArray(users[tIdx].followers) ? users[tIdx].followers : [];
@@ -158,12 +168,12 @@ app.post('/api/users/:id/unfollow', async (req, res) => {
     // If users not found, create placeholders to keep state consistent
     let tIdx = users.findIndex(u => u.id === targetId);
     if (tIdx === -1) {
-      users.push({ id: targetId, name: targetId, email: '', joined: new Date().toISOString(), lastSeen: new Date().toISOString(), followers: [], following: [], notifications: [] });
+      users.push({ id: targetId, name: 'User', email: '', joined: new Date().toISOString(), lastSeen: new Date().toISOString(), followers: [], following: [], notifications: [] });
       tIdx = users.length - 1;
     }
     let fIdx = users.findIndex(u => u.id === followerId);
     if (fIdx === -1) {
-      users.push({ id: followerId, name: followerId, email: '', joined: new Date().toISOString(), lastSeen: new Date().toISOString(), followers: [], following: [], notifications: [] });
+      users.push({ id: followerId, name: 'User', email: '', joined: new Date().toISOString(), lastSeen: new Date().toISOString(), followers: [], following: [], notifications: [] });
       fIdx = users.length - 1;
     }
     users[tIdx].followers = (users[tIdx].followers || []).filter(id => id !== followerId);
@@ -191,7 +201,7 @@ app.post('/api/users/:id/notifications', async (req, res) => {
     let idx = users.findIndex(u => u.id === uid);
     if (idx === -1) {
       // create placeholder user so notifications are persisted
-      users.push({ id: uid, name: uid, email: '', joined: new Date().toISOString(), lastSeen: new Date().toISOString(), followers: [], following: [], notifications: [] });
+      users.push({ id: uid, name: 'User', email: '', joined: new Date().toISOString(), lastSeen: new Date().toISOString(), followers: [], following: [], notifications: [] });
       idx = users.length - 1;
     }
     users[idx].notifications = Array.isArray(users[idx].notifications) ? users[idx].notifications : [];
@@ -290,9 +300,10 @@ app.post('/api/users', async (req, res) => {
     const users = await readUsers();
     const idx = users.findIndex(x => (u.id && x.id === u.id) || (u.email && x.email === u.email));
     const now = new Date().toISOString();
+    const id = u.id || (`user_${(u.email||'anon').replace(/[^a-z0-9]/gi,'')}`);
     const profile = {
-      id: u.id || (`user_${(u.email||'anon').replace(/[^a-z0-9]/gi,'')}`),
-      name: u.name || (u.email ? u.email.split('@')[0] : 'User'),
+      id,
+      name: normalizeServerUserName(u.name, id, u.email),
       // images are disabled: do not store profile images; use default avatar client-side
       // image field intentionally omitted to avoid storing images
       bio: u.bio || '',

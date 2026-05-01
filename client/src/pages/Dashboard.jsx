@@ -1333,6 +1333,10 @@ export default function Dashboard() {
       || trimmedName === 'Anonymous';
   };
 
+  const isRealName = (name, id) => {
+    return Boolean(name && !isPlaceholderName(name, id));
+  };
+
   const getFallbackUserName = (id) => {
     if (!id) return 'User';
     const shortId = String(id).length > 8 ? `${String(id).slice(0,6)}...` : String(id);
@@ -1347,10 +1351,10 @@ export default function Dashboard() {
     // ensure followers/following are arrays of ids
     const followersArr = Array.isArray(u.followers) ? u.followers.map(x => (typeof x === 'string' ? x : (x && (x.id||x.userId||x.uid) ? (x.id||x.userId||x.uid) : null))).filter(Boolean) : [];
     const followingArr = Array.isArray(u.following) ? u.following.map(x => (typeof x === 'string' ? x : (x && (x.id||x.userId||x.uid) ? (x.id||x.userId||x.uid) : null))).filter(Boolean) : [];
-    const nameValue = isPlaceholderName(u.name, normalizedId) ? '' : (u.name || '');
-    const displayNameValue = isPlaceholderName(u.displayName, normalizedId) ? '' : (u.displayName || '');
+    const nameValue = isRealName(u.name, normalizedId) ? u.name : '';
+    const displayNameValue = isRealName(u.displayName, normalizedId) ? u.displayName : '';
     const friendlyName = nameValue || displayNameValue || (u.email ? (String(u.email).split('@')[0] || '') : '');
-    const name = friendlyName || (u.email ? (String(u.email).split('@')[0] || getFallbackUserName(normalizedId)) : getFallbackUserName(normalizedId));
+    const name = friendlyName || getFallbackUserName(normalizedId);
     return { ...u, id: normalizedId, name, displayName: displayNameValue || name, profileImage: img, followers: followersArr, following: followingArr };
   };
 
@@ -1368,7 +1372,11 @@ export default function Dashboard() {
           const prevById = new Map((prev || []).map(p => [p.id, p]));
           const merged = incoming.map(inc => {
             const existing = prevById.get(inc.id) || {};
-            const name = inc.name || inc.displayName || existing.name || existing.displayName || (inc.email ? inc.email.split('@')[0] : inc.id);
+            const name = isRealName(inc.name, inc.id) ? inc.name
+              : isRealName(inc.displayName, inc.id) ? inc.displayName
+              : isRealName(existing.name, inc.id) ? existing.name
+              : isRealName(existing.displayName, inc.id) ? existing.displayName
+              : (inc.email ? inc.email.split('@')[0] : inc.id);
             return { ...existing, ...inc, name };
           });
           // include any previous users not present in incoming list
@@ -2296,9 +2304,11 @@ useEffect(() => {
       try {
         const all = users || [];
         const existingIndex = all.findIndex(u => u.id === currentUser.uid || u.email === currentUser.email);
+        const existingProfileName = all[existingIndex] ? (isRealName(all[existingIndex].name, currentUser.uid) ? all[existingIndex].name : (isRealName(all[existingIndex].displayName, currentUser.uid) ? all[existingIndex].displayName : '')) : '';
         const profile = {
           id: currentUser.uid,
-          name: currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'User'),
+          name: currentUser.displayName || existingProfileName || (currentUser.email ? currentUser.email.split('@')[0] : 'User'),
+          displayName: currentUser.displayName || existingProfileName || null,
           bio: all[existingIndex]?.bio || '',
           topics: all[existingIndex]?.topics || [],
           email: currentUser.email || '',
