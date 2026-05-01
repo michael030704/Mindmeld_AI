@@ -1339,8 +1339,7 @@ export default function Dashboard() {
 
   const getFallbackUserName = (id) => {
     if (!id) return 'User';
-    const shortId = String(id).length > 8 ? `${String(id).slice(0,6)}...` : String(id);
-    return `User ${shortId}`;
+    return 'User';
   };
 
   const normalizeUser = (u) => {
