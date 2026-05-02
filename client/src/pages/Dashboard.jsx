@@ -129,10 +129,8 @@ const IconConnections = ({ size = 18 }) => (
 
 const IconMentor = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-    <path d="M12 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" fill="#f59e0b"/>
-    <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="#f59e0b" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M9 12v2" stroke="#fff" strokeWidth="1.2" strokeLinecap="round"/>
-    <path d="M15 12v2" stroke="#fff" strokeWidth="1.2" strokeLinecap="round"/>
+    <path d="M12 2a2 2 0 0 1 2 2v3h7a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h7V4a2 2 0 0 1 2-2z" stroke="#6b7280" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M5 12h14M5 16h10" stroke="#6b7280" strokeWidth="1.2" strokeLinecap="round"/>
   </svg>
 );
 
@@ -2336,7 +2334,7 @@ useEffect(() => {
       const initialSession = [
         {
           id: 'welcome',
-          text: "👋 Welcome to your AI Learning Mentor! I'm here to help you grow your knowledge, connect ideas, and achieve your learning goals. I'll analyze your notes, provide personalized insights, and guide you on your learning journey.\nLet's start by creating your first note or asking me a question!",
+          text: "👋 Welcome! I'm here to help you grow your knowledge, connect ideas, and achieve your learning goals. I'll analyze your notes, provide personalized insights, and guide you on your learning journey.\nLet's start by creating your first note or asking me a question!",
           type: 'mentor',
           timestamp: new Date().toISOString(),
           suggestedActions: ["Create first note", "Ask a question", "Set a goal"]
@@ -3773,7 +3771,7 @@ useEffect(() => {
     { icon: '📝', label: 'New Note', onClick: () => textareaRef.current?.focus() },
     { icon: '🗺️', label: 'Mind Map', onClick: () => setActiveTab('mindmap') },
     { icon: '📇', label: 'Flashcards', onClick: handleGenerateFlashcards },
-    { icon: '🧠', label: 'AI Mentor', onClick: () => setActiveTab('mentor') },
+    { icon: '📚', label: 'Guide', onClick: () => setActiveTab('mentor') },
     { icon: '📊', label: 'Insights', onClick: () => {
       if (contentAnalysis) {
         showAlertPopup(
@@ -4074,7 +4072,7 @@ useEffect(() => {
             className={`nav-item ${activeTab === 'mentor' ? 'active' : ''}`}
           >
             <span className="nav-icon"><IconMentor /></span>
-            <span className="nav-label">AI Mentor</span>
+            <span className="nav-label">Guide</span>
             {mentorSystem.currentChallenge && <span className="nav-badge">🎯</span>}
           </button>
           <button
@@ -4801,11 +4799,11 @@ useEffect(() => {
                 </div>
                 <div className="mentor-status">
                   <span className="status-indicator active"></span>
-                  <span>Adaptive AI Mentor Online</span>
+                  <span>Guide Online</span>
                 </div>
               </div>
               <div className="mentor-info">
-                <h2>Your AI Learning Mentor</h2>
+                <h2>Learning Guide</h2>
                 <p className="mentor-greeting">{getMentorGreeting()}</p>
                 <div className="mentor-stats">
                   <div className="stat">
