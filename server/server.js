@@ -819,7 +819,7 @@ app.use((err, req, res, next) => {
 });
 
 // Serve built client assets and fallback to index for SPA routes in production
-const clientDist = path.join(__dirname, 'client', 'dist');
+const clientDist = path.join(__dirname, '..', 'client', 'dist');
 console.log('Client dist path:', clientDist, 'exists:', fs.existsSync(clientDist));
 if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist));
