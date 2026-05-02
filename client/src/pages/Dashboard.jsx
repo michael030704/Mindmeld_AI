@@ -1559,6 +1559,7 @@ export default function Dashboard() {
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [friendsSearch, setFriendsSearch] = useState('');
   const [following, setFollowing] = useState([]); // array of user ids we follow
+  const followingIds = Array.isArray(following) ? following : [];
   const [chats, setChats] = useState({}); // { userId: [{sender, text, ts}] }
   const [chatUser, setChatUser] = useState(null);
   const [showChat, setShowChat] = useState(false);
@@ -1572,8 +1573,15 @@ export default function Dashboard() {
 
   const initialTab = (location?.state && location.state.activeTab) || new URLSearchParams(location?.search || '').get('tab') || 'notes';
   const [activeTab, setActiveTab] = useState(initialTab);
-  // Theme (light/dark) — restored from Firestore on mount
-  const [theme, setTheme] = useState('light');
+  // Theme (light/dark) — restore from localStorage immediately for smoother refresh
+  const [theme, setTheme] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage.getItem('mindmeld_theme') || 'light';
+      }
+    } catch (e) {}
+    return 'light';
+  });
   const [themeLoaded, setThemeLoaded] = useState(false);
   // Profile edit state
   const [editingProfile, setEditingProfile] = useState(false);
@@ -1609,7 +1617,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     try {
-      // Sync theme to Firestore only (no localStorage)
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('mindmeld_theme', theme);
+      }
       const uid = currentUser?.uid;
       if (db && uid) {
         const meRef = doc(db, 'users', uid);
@@ -1621,9 +1631,23 @@ export default function Dashboard() {
   const toggleTheme = (e) => {
     // If called from an input change event, use the checked value
     if (e && e.target && typeof e.target.checked !== 'undefined') {
-      setTheme(e.target.checked ? 'dark' : 'light');
+      const next = e.target.checked ? 'dark' : 'light';
+      setTheme(next);
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem('mindmeld_theme', next);
+        }
+      } catch (e) {}
     } else {
-      setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+      setTheme(prev => {
+        const next = prev === 'dark' ? 'light' : 'dark';
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem('mindmeld_theme', next);
+          }
+        } catch (e) {}
+        return next;
+      });
     }
   };
 
@@ -1732,8 +1756,6 @@ export default function Dashboard() {
           if (!u || !u.id || u.id === myId) return;
           if (Array.isArray(u.following) && u.following.includes(myId)) {
             f.push({ ...u, profileImage: '' });
-          } else if (Array.isArray(u.followers) && u.followers.includes(myId)) {
-            f.push({ ...u, profileImage: '' });
           }
         } catch (e) {}
       });
@@ -1750,11 +1772,8 @@ export default function Dashboard() {
       const seen = new Set();
       (users || []).forEach(u => {
         try {
-          // if server user includes following or followers arrays, respect them
+          // if server user includes following arrays, respect them
           if (Array.isArray(u.following) && u.following.includes(myId)) {
-            f.push({ ...u, profileImage: '' });
-            seen.add(u.id);
-          } else if (Array.isArray(u.followers) && u.followers.includes(myId)) {
             f.push({ ...u, profileImage: '' });
             seen.add(u.id);
           }
@@ -1908,7 +1927,7 @@ export default function Dashboard() {
   const closeFollowersModal = () => setShowFollowersModal(false);
 
 // Followers / Following modal
-const FollowersModal = ({ open, onClose, followers = [], following = [], users = [], onToggleFollow = () => {} }) => {
+const FollowersModal = ({ open, onClose, followers = [], following = [], users = [], onToggleFollow = () => {}, followingIds = [] }) => {
   if (!open) return null;
   return (
     <div className="popup-overlay">
