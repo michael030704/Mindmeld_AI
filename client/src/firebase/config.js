@@ -1,8 +1,14 @@
 ﻿import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 // Your Firebase configuration
+
+
+export const auth = getAuth();
+
+setPersistence(auth, browserLocalPersistence);
+
 const firebaseConfig = {
   apiKey: "AIzaSyDwX6yBiQrXm8Rligchhoq1woa3nCxYUlg",
   authDomain: "myproject-f5c4a.firebaseapp.com",
