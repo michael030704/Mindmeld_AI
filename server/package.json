@@ -5,7 +5,6 @@
   "main": "server.js",
   "scripts": {
     "build": "cd ../client && npm install && npm run build",
-    "prestart": "cd ../client && npm install && npm run build",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
