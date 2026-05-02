@@ -1,0 +1,9 @@
+{
+  "name": "mindmeld-ai",
+  "private": true,
+  "scripts": {
+    "build": "cd server && npm install && npm run build",
+    "start": "cd server && npm install && npm start",
+    "dev": "cd server && npm install && npm run dev"
+  }
+}
