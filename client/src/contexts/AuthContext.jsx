@@ -335,9 +335,9 @@ export function AuthProvider({ children }) {
     clearAllUserData, // Export for use in components
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+return (
+  <AuthContext.Provider value={value}>
+    {children}
+  </AuthContext.Provider>
+);
 }
