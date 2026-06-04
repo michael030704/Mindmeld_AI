@@ -6,7 +6,11 @@ export default defineConfig({
   server: {
     port: 5173,
     host: 'localhost',
-    open: true
+    open: true,
+    middlewareMode: false,
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
+    }
   },
   build: {
     outDir: 'dist',

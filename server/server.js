@@ -102,23 +102,207 @@ async function writeUsers(users) {
   }
 }
 const normalizeServerUserName = (rawName, id, email) => {
+  // Priority 1: If rawName is a non-empty string, use it
   const name = typeof rawName === 'string' ? rawName.trim() : '';
-  const normalizedId = id ? String(id).trim() : '';
-  if (name && normalizedId && name !== normalizedId && name !== `User ${normalizedId}`) {
+  if (name && name !== 'undefined' && name.length > 0) {
     return name;
   }
+  
+  // Priority 2: Extract from email
   if (email && String(email).trim()) {
     return String(email).split('@')[0];
   }
+  
+  // Fallback: Use ID as name
+  const normalizedId = id ? String(id).trim() : '';
+  if (normalizedId) {
+    return normalizedId;
+  }
+  
+  // Last resort
   return 'User';
 };
-// GET all users
+
+// GET all users (from Firebase with fallback to local JSON)
 app.get('/api/users', async (req, res) => {
   try {
-    const users = await readUsers();
+    let users = [];
+    
+    // 🔥 Try Firebase first
+    if (admin && db) {
+      users = await getUsersFromFirebase();
+      if (users.length > 0) {
+        console.log(`[GET /api/users] Loaded ${users.length} users from Firebase`);
+        return res.json(users);
+      }
+    }
+    
+    // Fallback to local JSON
+    users = await readUsers();
+    console.log(`[GET /api/users] Loaded ${users.length} users from local JSON`);
     return res.json(users);
   } catch (e) {
+    console.error('[GET /api/users] Error:', e);
     return res.status(500).json({ error: 'Failed to read users' });
+  }
+});
+
+// GET search users: /api/users/search?q=<query> (from Firebase with fallback)
+app.get('/api/users/search', async (req, res) => {
+  try {
+    const { q } = req.query || {};
+    let users = [];
+    
+    // 🔥 Try Firebase first
+    if (admin && db) {
+      users = await getUsersFromFirebase();
+      if (users.length > 0) {
+        console.log(`[GET /api/users/search] Searching ${users.length} Firebase users`);
+      }
+    }
+    
+    // Fallback to local JSON if Firebase empty
+    if (users.length === 0) {
+      users = await readUsers();
+      console.log(`[GET /api/users/search] Searching ${users.length} local users`);
+    }
+    
+    if (!q || q.trim() === '') {
+      return res.json(users);
+    }
+    
+    const query = q.toLowerCase();
+    const results = users.filter(u => 
+      (u.name && u.name.toLowerCase().includes(query)) ||
+      (u.email && u.email.toLowerCase().includes(query)) ||
+      (u.id && u.id.toLowerCase().includes(query))
+    );
+    console.log(`[GET /api/users/search] Query="${q}" returned ${results.length} results`);
+    return res.json(results);
+  } catch (e) {
+    console.error('GET /api/users/search error', e);
+    return res.status(500).json({ error: 'Failed to search users' });
+  }
+});
+
+// GET /api/users/:id - Get user profile by ID
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    if (!userId) return res.status(400).json({ error: 'user id required' });
+    
+    // Try Firebase first
+    if (admin && db) {
+      try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+          console.log(`[GET /api/users/:id] Found ${userId} in Firebase`);
+          return res.json(userDoc.data());
+        }
+      } catch (err) {
+        console.warn(`[GET /api/users/:id] Firebase error:`, err.message);
+      }
+    }
+    
+    // Fallback to JSON
+    const users = await readUsers();
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      console.log(`[GET /api/users/:id] Found ${userId} in JSON`);
+      return res.json(user);
+    }
+    
+    return res.status(404).json({ error: 'User not found' });
+  } catch (e) {
+    console.error('GET /api/users/:id error', e);
+    return res.status(500).json({ error: 'Failed to get user profile' });
+  }
+});
+
+// POST /api/users/:id/online - Update user online status (create if not exists)
+app.post('/api/users/:id/online', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { isOnline } = req.body || {};
+    
+    if (!userId) return res.status(400).json({ error: 'User ID required' });
+    
+    console.log(`[POST /api/users/:id/online] Updating ${userId} - isOnline=${isOnline}`);
+    
+    // Update in Firebase
+    if (admin && db) {
+      try {
+        // First check if user exists in Firebase
+        const userDoc = await db.collection('users').doc(userId).get();
+        
+        if (userDoc.exists) {
+          // User exists, just update online status
+          const success = await updateUserOnlineStatus(userId, isOnline === true);
+          if (success) {
+            console.log(`[POST /api/users/:id/online] ✅ Updated in Firebase`);
+            return res.json({ ok: true, userId, isOnline: isOnline === true, message: `User ${isOnline ? 'came online' : 'went offline'}` });
+          }
+        } else {
+          // User doesn't exist in Firebase, create minimal profile
+          console.log(`[POST /api/users/:id/online] User not in Firebase, creating minimal profile`);
+          const minimalProfile = {
+            id: userId,
+            name: 'User',
+            email: '',
+            displayName: 'User',
+            isOnline: isOnline === true,
+            lastSeen: new Date().toISOString(),
+            followers: [],
+            following: [],
+            notifications: [],
+            topics: [],
+            bio: '',
+            joined: new Date().toISOString()
+          };
+          await updateUserInFirebase(userId, minimalProfile);
+          return res.json({ ok: true, userId, isOnline: isOnline === true, created: true });
+        }
+      } catch (err) {
+        console.error(`[POST /api/users/:id/online] Firebase error:`, err.message);
+      }
+    }
+    
+    // Fallback: Update in local JSON
+    const users = await readUsers();
+    let idx = users.findIndex(u => u.id === userId);
+    
+    if (idx !== -1) {
+      // User exists, update
+      users[idx].lastSeen = new Date().toISOString();
+      if (isOnline !== undefined) users[idx].isOnline = isOnline;
+      await writeUsers(users);
+      console.log(`[POST /api/users/:id/online] ✅ Updated in JSON`);
+      return res.json({ ok: true, userId, isOnline: isOnline === true });
+    } else {
+      // User doesn't exist in JSON either, create minimal profile
+      console.log(`[POST /api/users/:id/online] User not in JSON, creating minimal profile`);
+      const minimalProfile = {
+        id: userId,
+        name: 'User',
+        email: '',
+        displayName: 'User',
+        isOnline: isOnline === true,
+        lastSeen: new Date().toISOString(),
+        followers: [],
+        following: [],
+        notifications: [],
+        topics: [],
+        bio: '',
+        joined: new Date().toISOString()
+      };
+      users.push(minimalProfile);
+      await writeUsers(users);
+      console.log(`[POST /api/users/:id/online] ✅ Created in JSON`);
+      return res.json({ ok: true, userId, isOnline: isOnline === true, created: true });
+    }
+  } catch (e) {
+    console.error('POST /api/users/:id/online error', e);
+    return res.status(500).json({ error: 'Failed to update online status: ' + e.message });
   }
 });
 
@@ -147,6 +331,18 @@ app.post('/api/users/:id/follow', async (req, res) => {
     if (!users[fIdx].following.includes(targetId)) users[fIdx].following.push(targetId);
     const ok = await writeUsers(users);
     try { console.log(`User ${followerId} now follows ${targetId}. followers=${users[tIdx].followers.length}, following=${users[fIdx].following.length}`); } catch(e){}
+    
+    // 🔥 Also update in Firebase
+    if (admin && db) {
+      try {
+        await updateUserInFirebase(targetId, { followers: users[tIdx].followers });
+        await updateUserInFirebase(followerId, { following: users[fIdx].following });
+        console.log(`[POST /api/users/:id/follow] ✅ Updated in Firebase`);
+      } catch (err) {
+        console.warn(`[POST /api/users/:id/follow] Firebase update failed:`, err.message);
+      }
+    }
+    
     if (!ok) {
       console.error('Failed to persist follow change to users.json');
       return res.status(500).json({ error: 'Failed to persist follow' });
@@ -180,6 +376,18 @@ app.post('/api/users/:id/unfollow', async (req, res) => {
     users[fIdx].following = (users[fIdx].following || []).filter(id => id !== targetId);
     const ok = await writeUsers(users);
     try { console.log(`User ${followerId} unfollowed ${targetId}. followers=${users[tIdx].followers.length}, following=${users[fIdx].following.length}`); } catch(e){}
+    
+    // 🔥 Also update in Firebase
+    if (admin && db) {
+      try {
+        await updateUserInFirebase(targetId, { followers: users[tIdx].followers });
+        await updateUserInFirebase(followerId, { following: users[fIdx].following });
+        console.log(`[POST /api/users/:id/unfollow] ✅ Updated in Firebase`);
+      } catch (err) {
+        console.warn(`[POST /api/users/:id/unfollow] Firebase update failed:`, err.message);
+      }
+    }
+    
     if (!ok) {
       console.error('Failed to persist unfollow change to users.json');
       return res.status(500).json({ error: 'Failed to persist unfollow' });
@@ -292,31 +500,66 @@ app.delete('/api/users/:id/notifications', async (req, res) => {
   }
 });
 
-// POST upsert user (id or email)
+// POST upsert user (id or email) - Save to Firebase AND local JSON
 app.post('/api/users', async (req, res) => {
   try {
     const u = req.body || {};
     if (!u || (!u.id && !u.email)) return res.status(400).json({ error: 'User id or email required' });
-    const users = await readUsers();
-    const idx = users.findIndex(x => (u.id && x.id === u.id) || (u.email && x.email === u.email));
+    
     const now = new Date().toISOString();
     const id = u.id || (`user_${(u.email||'anon').replace(/[^a-z0-9]/gi,'')}`);
+    
+    console.log('📥 [POST /api/users] Received:', {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      displayName: u.displayName,
+      bio: u.bio,
+      firstName: u.firstName,
+      middleName: u.middleName,
+      lastName: u.lastName
+    });
+    
+    // 🔧 Use u.displayName if available, otherwise u.name, otherwise fallback
+    const finalName = u.displayName || u.name || normalizeServerUserName(u.name, id, u.email);
+    
     const profile = {
       id,
-      name: normalizeServerUserName(u.name, id, u.email),
-      // images are disabled: do not store profile images; use default avatar client-side
-      // image field intentionally omitted to avoid storing images
+      name: finalName,
       bio: u.bio || '',
       topics: u.topics || [],
       email: u.email || '',
       joined: u.joined || now,
-      lastSeen: u.lastSeen || now
+      lastSeen: u.lastSeen || now,
+      isOnline: u.isOnline || false,
+      displayName: finalName,
+      followers: u.followers || [],
+      following: u.following || [],
+      notifications: u.notifications || []
     };
-    // Images disabled — strip any incoming image fields to ensure no images are stored
-    try { console.log('[POST /api/users] upsert user', profile.id); } catch(e){}
+    
+    console.log('✅ [POST /api/users] Created profile:', {
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      displayName: profile.displayName
+    });
+    
+    // 🔥 Save to Firebase
+    if (admin && db) {
+      try {
+        await updateUserInFirebase(id, profile);
+        console.log(`[POST /api/users] User ${id} saved to Firebase`);
+      } catch (err) {
+        console.error(`[POST /api/users] Firebase save failed:`, err);
+      }
+    }
+    
+    // Save to local JSON (fallback)
+    const users = await readUsers();
+    const idx = users.findIndex(x => (u.id && x.id === u.id) || (u.email && x.email === u.email));
     if (idx >= 0) {
       users[idx] = { ...users[idx], ...profile };
-      // Ensure no image property remains on stored user
       if (users[idx].hasOwnProperty('image')) delete users[idx].image;
     } else {
       users.push(profile);
@@ -326,7 +569,7 @@ app.post('/api/users', async (req, res) => {
       console.error('Failed to persist user to users.json');
       return res.status(500).json({ error: 'Failed to persist user' });
     }
-    return res.json({ ok: true, users });
+    return res.json({ ok: true, user: profile, users });
   } catch (e) {
     console.error('POST /api/users error', e);
     return res.status(500).json({ error: 'Failed to persist user' });
@@ -351,6 +594,7 @@ app.delete('/api/users', async (req, res) => {
 
 // ✅ Initialize Firebase Admin SDK — supports env var OR local file
 let admin = null;
+let db = null;
 try {
   let serviceAccount = null;
 
@@ -384,13 +628,96 @@ try {
   if (serviceAccount) {
     admin = require('firebase-admin');
     admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    db = admin.firestore();
     console.log('✅ Firebase Admin SDK successfully initialized');
+    console.log('✅ Firestore database connected');
   } else {
-    console.warn('⚠️ No valid Firebase credentials found — Firebase features disabled');
+    console.log('ℹ️  Firebase Admin SDK not configured — using local JSON file persistence');
   }
 } catch (e) {
   console.warn('⚠️ Firebase Admin initialization failed:', e.message || e);
   admin = null;
+  db = null;
+}
+
+// ✅ Firebase Firestore User Functions
+async function getUsersFromFirebase() {
+  if (!admin || !db) return [];
+  try {
+    const snapshot = await db.collection('users').get();
+    const users = [];
+    snapshot.forEach(doc => {
+      const userData = doc.data();
+      users.push({
+        id: doc.id,
+        name: userData.displayName || userData.name || 'User',
+        email: userData.email || '',
+        bio: userData.bio || '',
+        topics: userData.topics || [],
+        joined: userData.joined || new Date().toISOString(),
+        lastSeen: userData.lastSeen || new Date().toISOString(),
+        isOnline: userData.isOnline || false,
+        followers: userData.followers || [],
+        following: userData.following || [],
+        notifications: userData.notifications || []
+      });
+    });
+    return users;
+  } catch (err) {
+    console.error('Error reading users from Firebase:', err);
+    return [];
+  }
+}
+
+async function getUserFromFirebase(userId) {
+  if (!admin || !db) return null;
+  try {
+    const doc = await db.collection('users').doc(userId).get();
+    if (!doc.exists) return null;
+    const userData = doc.data();
+    return {
+      id: doc.id,
+      name: userData.displayName || userData.name || 'User',
+      email: userData.email || '',
+      bio: userData.bio || '',
+      topics: userData.topics || [],
+      joined: userData.joined || new Date().toISOString(),
+      lastSeen: userData.lastSeen || new Date().toISOString(),
+      isOnline: userData.isOnline || false,
+      followers: userData.followers || [],
+      following: userData.following || [],
+      notifications: userData.notifications || []
+    };
+  } catch (err) {
+    console.error('Error reading user from Firebase:', err);
+    return null;
+  }
+}
+
+async function updateUserInFirebase(userId, updates) {
+  if (!admin || !db) return false;
+  try {
+    await db.collection('users').doc(userId).set(updates, { merge: true });
+    return true;
+  } catch (err) {
+    console.error('Error updating user in Firebase:', err);
+    return false;
+  }
+}
+
+async function updateUserOnlineStatus(userId, isOnline) {
+  if (!admin || !db) return false;
+  try {
+    await db.collection('users').doc(userId).update({
+      isOnline,
+      lastSeen: new Date().toISOString()
+    });
+    console.log(`[PRESENCE] User ${userId} is now ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
+    return true;
+  } catch (err) {
+    console.error('Error updating user presence:', err);
+    return false;
+  }
 }
 
 // In-memory OTP store
@@ -506,7 +833,9 @@ app.post('/api/messages', async (req, res) => {
       from: m.from,
       to: m.to,
       text: m.text,
-      ts: m.ts || new Date().toISOString()
+      ts: m.ts || new Date().toISOString(),
+      status: m.status || 'sent', // 'sent', 'pending', 'accepted'
+      isPending: m.isPending || false // Mark as pending if from doesn't follow to
     };
     messages.push(msg);
     await writeMessages(messages);
@@ -590,6 +919,136 @@ app.delete('/api/messages', async (req, res) => {
   }
 });
 
+// GET pending message requests for a user: /api/messages/requests?user=<uid>
+app.get('/api/messages/requests', async (req, res) => {
+  try {
+    const { user } = req.query || {};
+    if (!user) return res.status(400).json({ error: 'user query param required' });
+    
+    // Get all followers of this user
+    const users = await getUsersFromFirebase();
+    if (users.length === 0) {
+      await readUsers(); // fallback
+    }
+    const targetUser = users.find(u => u.id === user);
+    const followerIds = targetUser?.followers || [];
+    
+    // Get messages from followers who are not followed back
+    const messages = await readMessages();
+    const following = targetUser?.following || [];
+    
+    const pendingRequests = messages.filter(m => {
+      // Message is from a follower who we don't follow back
+      return m.to === user && 
+             followerIds.includes(m.from) && 
+             !following.includes(m.from);
+    });
+    
+    // Group by sender
+    const grouped = {};
+    pendingRequests.forEach(msg => {
+      if (!grouped[msg.from]) {
+        grouped[msg.from] = [];
+      }
+      grouped[msg.from].push(msg);
+    });
+    
+    return res.json(grouped);
+  } catch (e) {
+    console.error('GET /api/messages/requests error', e);
+    return res.status(500).json({ error: 'Failed to read message requests' });
+  }
+});
+
+// POST /api/messages/requests/:fromUserId/accept - Accept a message request and auto-follow
+app.post('/api/messages/requests/:fromUserId/accept', async (req, res) => {
+  try {
+    const fromUserId = req.params.fromUserId;
+    const { toUserId } = req.body || {};
+    if (!toUserId) return res.status(400).json({ error: 'toUserId required' });
+    
+    const users = await getUsersFromFirebase();
+    if (users.length === 0) {
+      await readUsers(); // fallback
+    }
+    
+    // Add to following list
+    const idx = users.findIndex(u => u.id === toUserId);
+    if (idx !== -1) {
+      users[idx].following = users[idx].following || [];
+      if (!users[idx].following.includes(fromUserId)) {
+        users[idx].following.push(fromUserId);
+      }
+      
+      // Update Firebase
+      if (admin && db) {
+        await updateUserInFirebase(toUserId, { following: users[idx].following });
+      }
+      await writeUsers(users);
+    }
+    
+    return res.json({ ok: true, message: 'Message request accepted' });
+  } catch (e) {
+    console.error('POST /api/messages/requests/:fromUserId/accept error', e);
+    return res.status(500).json({ error: 'Failed to accept message request' });
+  }
+});
+
+// DELETE /api/messages/requests/:fromUserId - Delete/decline a message request
+app.delete('/api/messages/requests/:fromUserId', async (req, res) => {
+  try {
+    const fromUserId = req.params.fromUserId;
+    const { toUserId } = req.query || {};
+    if (!toUserId) return res.status(400).json({ error: 'toUserId query param required' });
+    
+    // Delete messages from this user to toUserId
+    const messages = await readMessages();
+    const next = messages.filter(m => !(m.from === fromUserId && m.to === toUserId));
+    await writeMessages(next);
+    
+    return res.json({ ok: true, message: 'Message request deleted' });
+  } catch (e) {
+    console.error('DELETE /api/messages/requests/:fromUserId error', e);
+    return res.status(500).json({ error: 'Failed to delete message request' });
+  }
+});
+
+// POST /api/messages/requests/:fromUserId/block - Block a user
+app.post('/api/messages/requests/:fromUserId/block', async (req, res) => {
+  try {
+    const fromUserId = req.params.fromUserId;
+    const { toUserId } = req.body || {};
+    if (!toUserId) return res.status(400).json({ error: 'toUserId required' });
+    
+    // Remove from followers list
+    const users = await getUsersFromFirebase();
+    if (users.length === 0) {
+      await readUsers(); // fallback
+    }
+    
+    const idx = users.findIndex(u => u.id === toUserId);
+    if (idx !== -1) {
+      users[idx].followers = (users[idx].followers || []).filter(id => id !== fromUserId);
+      
+      // Update Firebase
+      if (admin && db) {
+        await updateUserInFirebase(toUserId, { followers: users[idx].followers });
+      }
+      await writeUsers(users);
+    }
+    
+    // Delete all messages from this user
+    const messages = await readMessages();
+    const next = messages.filter(m => !(m.from === fromUserId && m.to === toUserId));
+    await writeMessages(next);
+    
+    return res.json({ ok: true, message: 'User blocked and messages deleted' });
+  } catch (e) {
+    console.error('POST /api/messages/requests/:fromUserId/block error', e);
+    return res.status(500).json({ error: 'Failed to block user' });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -624,6 +1083,41 @@ app.post('/api/ai', async (req, res) => {
 
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   const GROQ_KEY = process.env.GROQ_API_KEY;
+
+  // --- DEMO MODE (no API keys configured) ---
+  if (AI_PROVIDER === 'none') {
+    console.log('[AI] Demo mode - no API keys configured. Set GROQ_API_KEY or OPENAI_API_KEY in server/.env');
+    // Extract the last user message for context
+    let userMessage = prompt || '';
+    if (messages && messages.length > 0) {
+      userMessage = messages[messages.length - 1]?.content || '';
+    }
+    
+    // Demo responses based on user message keywords
+    const lowerMessage = userMessage.toLowerCase();
+    let response = '';
+    
+    if (lowerMessage.includes('rizal')) {
+      response = 'José Rizal (1861-1896) was a Filipino nationalist, writer, and physician. He wrote two famous novels: "Noli Me Tangere" (Touch Me Not) and "El Filibusterismo" (The Reign of Greed). His works criticized Spanish colonial rule and promoted reform. He was executed by the Spanish, which sparked the Philippine Revolution.';
+    } else if (lowerMessage.includes('bonifacio')) {
+      response = 'Andres Bonifacio (1863-1897) was a Filipino revolutionary leader and founder of the Katipunan (secret society). He played a crucial role in initiating the Philippine Revolution against Spanish colonial rule. He is considered the Father of the Philippine Revolution and remains a national hero.';
+    } else if (lowerMessage.includes('learning') || lowerMessage.includes('study') || lowerMessage.includes('improve')) {
+      response = 'Effective learning strategies: 1) Active recall - test yourself frequently on material, 2) Spaced repetition - review at increasing intervals, 3) Interleaving - mix different topics and problem types, 4) Teaching others - explain concepts aloud, 5) Take breaks - your brain needs rest to consolidate memories. Which strategy would you like to focus on?';
+    } else if (lowerMessage.includes('thanks') || lowerMessage.includes('thank you')) {
+      response = 'You\'re welcome! 😊 Feel free to ask me anything about learning, study strategies, or topics you\'re curious about. I\'m here to help you learn more effectively!';
+    } else if (lowerMessage.includes('hi') || lowerMessage.includes('hello') || lowerMessage.includes('hey')) {
+      response = 'Hi there! 👋 I\'m your AI Learning Mentor. I can help you with study strategies, learning techniques, historical topics, and more. What would you like to learn about today?';
+    } else {
+      response = 'Great question! I\'m running in demo mode. For real AI responses powered by Groq, configure GROQ_API_KEY in server/.env. In the meantime, I can help with general learning tips and questions. What would you like to know?';
+    }
+    
+    return res.json({
+      id: `demo_${Date.now()}`,
+      text: response,
+      model: 'demo-mode',
+      demoMode: true
+    });
+  }
 
   // --- GROQ INTEGRATION ---
   if (AI_PROVIDER === 'groq') {

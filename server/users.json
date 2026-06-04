@@ -1,12 +1,62 @@
 [
   {
-    "id": "iT7f7dZF8NP5XBsKVqKWHekpeoT2",
-    "name": "Niño Michael Saragena",
+    "id": "1Tguq4pa74Rm5uOTRh0WSZQK7nn2",
+    "name": "Michael Gimena Saragena",
+    "email": "michael@gmail.com",
     "bio": "",
     "topics": [],
-    "email": "ninmikesaragena@gmail.com",
-    "joined": "2026-05-02T03:57:31.633Z",
-    "lastSeen": "2026-05-02T03:57:31.633Z",
+    "joined": "2026-06-04T02:06:31.211Z",
+    "lastSeen": "2026-06-04T02:06:31.211Z",
+    "isOnline": true,
+    "followers": [],
+    "following": [],
+    "notifications": [],
+    "displayName": "Michael Gimena Saragena"
+  },
+  {
+    "id": "H9MaveoZYcglrDUe256bkSs5P4k2",
+    "name": "rdlyn escorpizo",
+    "email": "rdlynpot@gmail.com",
+    "bio": "",
+    "topics": [],
+    "joined": "2026-06-04T01:35:24.043Z",
+    "lastSeen": "2026-06-04T01:39:15.028Z",
+    "isOnline": true,
+    "followers": [
+      "HkAeD7OXMGew35Zvircu96Sc9BC2"
+    ],
+    "following": [
+      "1Tguq4pa74Rm5uOTRh0WSZQK7nn2",
+      "HkAeD7OXMGew35Zvircu96Sc9BC2"
+    ],
+    "notifications": []
+  },
+  {
+    "id": "HkAeD7OXMGew35Zvircu96Sc9BC2",
+    "name": "CLASH_ GAMING",
+    "email": "doc2007lane@gmail.com",
+    "bio": "",
+    "topics": [],
+    "joined": "2026-06-04T02:57:03.755Z",
+    "lastSeen": "2026-06-04T02:57:03.762Z",
+    "isOnline": true,
+    "followers": [],
+    "following": [],
+    "notifications": [],
+    "displayName": "CLASH_ GAMING"
+  },
+  {
+    "id": "56fvCWEmoNN2qEM1TO73AYJu4JI3",
+    "name": "John Public",
+    "bio": "",
+    "topics": [],
+    "email": "test@example.com",
+    "joined": "2026-06-04T02:08:38.197Z",
+    "lastSeen": "2026-06-04T02:08:38.197Z",
+    "isOnline": true,
+    "displayName": "John Public",
+    "followers": [],
+    "following": [],
     "notifications": []
   }
 ]

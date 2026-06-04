@@ -1,13 +1,7 @@
 ﻿import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 // Your Firebase configuration
-
-
-export const auth = getAuth();
-
-setPersistence(auth, browserLocalPersistence);
 
 const firebaseConfig = {
   apiKey: "AIzaSyDwX6yBiQrXm8Rligchhoq1woa3nCxYUlg",
@@ -24,6 +18,9 @@ const app = initializeApp(firebaseConfig);
 // Initialize services
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Set persistence
+setPersistence(auth, browserLocalPersistence);
 
 // Log initialization
 console.log("🔥 Firebase initialized for project:", firebaseConfig.projectId);

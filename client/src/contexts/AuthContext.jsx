@@ -66,13 +66,47 @@ export function AuthProvider({ children }) {
       }
 
       const uid = 'dev-user-' + Date.now();
-      const userEntry = { uid, email, password, ...names, displayName: [names.firstName, names.middleName, names.lastName].filter(Boolean).join(' ').trim() || null };
+      const displayName = [names.firstName, names.middleName, names.lastName].filter(Boolean).join(' ').trim() || null;
+      const userEntry = { 
+        uid, 
+        email, 
+        password, 
+        firstName: names.firstName || '',
+        middleName: names.middleName || '',
+        lastName: names.lastName || '',
+        displayName,
+        name: displayName || email.split('@')[0],
+        joined: new Date().toISOString(),
+        isOnline: true,
+        followers: [],
+        following: [],
+        topics: [],
+        bio: ''
+      };
       await setDoc(doc(db, 'users', uid), userEntry);
+
+      // Also save to backend API
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userEntry)
+        });
+        if (response.ok) {
+          console.log('✅ Dev user saved to backend');
+        } else {
+          console.warn('⚠️ Failed to save dev user to backend');
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to save dev user to backend:', err.message || err);
+      }
 
       const mockUser = {
         uid,
         email,
-        displayName: userEntry.displayName,
+        displayName: displayName,
         getIdToken: async () => 'dev-token-' + Date.now()
       };
 
@@ -110,6 +144,31 @@ export function AuthProvider({ children }) {
       };
 
       setCurrentUser(mockUser);
+
+      // 🔥 Ensure user profile exists in backend
+      try {
+        const userEntry = {
+          id: found.uid,
+          name: found.displayName || email.split('@')[0],
+          email: found.email,
+          displayName: found.displayName || email.split('@')[0],
+          isOnline: true
+        };
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userEntry)
+        });
+        
+        if (response.ok) {
+          console.log('✅ Dev user profile ensured in backend');
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to ensure dev user in backend:', err.message || err);
+      }
+
       return { user: mockUser };
     } catch (e) {
       throw e;
@@ -129,7 +188,38 @@ export function AuthProvider({ children }) {
 
     // Persist mock Google user in Firestore so it is visible to the rest of the app
     try {
-      await setDoc(doc(db, 'users', uid), { uid, email: mockUser.email, displayName: mockUser.displayName });
+      const userEntry = {
+        uid,
+        email: mockUser.email,
+        displayName: mockUser.displayName,
+        name: mockUser.displayName,
+        firstName: mockUser.displayName.split(' ')[0] || mockUser.displayName,
+        middleName: '',
+        lastName: mockUser.displayName.split(' ').slice(1).join(' ') || '',
+        joined: new Date().toISOString(),
+        isOnline: true,
+        followers: [],
+        following: [],
+        topics: [],
+        bio: ''
+      };
+      await setDoc(doc(db, 'users', uid), userEntry);
+
+      // Also save to backend
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userEntry)
+        });
+        if (response.ok) {
+          console.log('✅ Dev Google user saved to backend');
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to save dev Google user to backend:', err.message || err);
+      }
     } catch (e) {
       console.warn('Failed to persist dev Google user:', e);
     }
@@ -165,23 +255,88 @@ export function AuthProvider({ children }) {
     };
     setCurrentUser(userObj);
 
+    // 🔥 Save new user to backend/Firebase
+    try {
+      const token = await cred.user.getIdToken();
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: cred.user.uid,
+          name: displayName || email.split('@')[0],
+          email: cred.user.email,
+          displayName: displayName || email.split('@')[0],
+          firstName: names.firstName || '',
+          middleName: names.middleName || '',
+          lastName: names.lastName || '',
+          joined: new Date().toISOString(),
+          isOnline: true,
+          followers: [],
+          following: [],
+          topics: [],
+          bio: ''
+        })
+      });
+      
+      if (response.ok) {
+        console.log('✅ User profile saved to backend');
+      } else {
+        console.warn('⚠️ Failed to save user profile to backend:', await response.text());
+      }
+    } catch (err) {
+      console.warn('⚠️ Failed to save user profile:', err.message || err);
+    }
+
     return cred;
   };
 
   const realLogin = async (email, password) => {
     const { signInWithEmailAndPassword } = await import('firebase/auth');
-    return signInWithEmailAndPassword(auth, email, password);
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    
+    // Set currentUser immediately to avoid timing issues with onAuthStateChanged
+    if (result.user) {
+      const userObj = {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName || null
+      };
+      setCurrentUser(userObj);
+
+      // 🔥 Ensure user profile exists in backend
+      try {
+        const token = await result.user.getIdToken();
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            id: result.user.uid,
+            name: result.user.displayName || email.split('@')[0],
+            email: result.user.email,
+            displayName: result.user.displayName || email.split('@')[0],
+            isOnline: true
+          })
+        });
+        
+        if (response.ok) {
+          console.log('✅ User profile ensured in backend');
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to ensure user in backend:', err.message || err);
+      }
+    }
+    
+    return result;
   };
 
   const realGoogleLogin = async () => {
-    const { GoogleAuthProvider, signInWithPopup, signOut } = await import('firebase/auth');
-    
-    try {
-      await signOut(auth);
-      console.log("Signed out previous user to force account selection");
-    } catch (error) {
-      console.log("No user to sign out or sign out failed:", error);
-    }
+    const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
     
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({
@@ -192,7 +347,55 @@ export function AuthProvider({ children }) {
     provider.addScope('profile');
     provider.addScope('email');
     
-    return signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, provider);
+    
+    // Set currentUser from the result to ensure state is updated
+    if (result.user) {
+      const userObj = {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName || null
+      };
+      setCurrentUser(userObj);
+
+      // 🔥 Save Google user to backend/Firebase (upsert)
+      try {
+        const token = await result.user.getIdToken();
+        const displayNameValue = result.user.displayName || result.user.email.split('@')[0];
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            id: result.user.uid,
+            name: displayNameValue,
+            email: result.user.email,
+            displayName: displayNameValue,
+            firstName: displayNameValue.split(' ')[0] || displayNameValue,
+            middleName: '',
+            lastName: displayNameValue.split(' ').slice(1).join(' ') || '',
+            joined: new Date().toISOString(),
+            isOnline: true,
+            followers: [],
+            following: [],
+            topics: [],
+            bio: ''
+          })
+        });
+        
+        if (response.ok) {
+          console.log('✅ Google user saved to backend');
+        } else {
+          console.warn('⚠️ Failed to save Google user to backend');
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to save Google user profile:', err.message || err);
+      }
+    }
+    
+    return result;
   };
 
   const googleLogout = async () => {

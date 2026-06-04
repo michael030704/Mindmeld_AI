@@ -83,7 +83,7 @@ async function handleSubmit(e) {
     
     if (isLogin) {
       await login(email, password);
-      navigate('/dashboard', { state: { activeTab: 'dashboard' } });
+      navigate('/notes');
     } else {
       // ✅ Validate client-side
       if (!firstName.trim() || !lastName.trim()) {
@@ -108,7 +108,7 @@ async function handleSubmit(e) {
           lastName: lastName.trim()
         }
       );
-      navigate('/dashboard', { state: { activeTab: 'dashboard' } });
+      navigate('/notes');
     }
   } catch (err) {
     setError(friendlyAuthMessage(err, `Failed to ${isLogin ? 'sign in' : 'sign up'}`));
@@ -121,20 +121,8 @@ async function handleGoogleSignIn() {
     setError('');
     setLoading(true);
     
-    // Clear any cached Google data before login
-      try {
-        // Clear cookies and session storage; do not manipulate localStorage.
-        document.cookie.split(";").forEach(c => {
-          document.cookie = c.replace(/^ +/, "")
-            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-        });
-        sessionStorage.clear();
-      } catch (e) {
-        console.log("Error clearing cache:", e);
-      }
-    
     await googleLogin();
-    navigate('/dashboard', { state: { activeTab: 'dashboard' } });
+    navigate('/notes');
   } catch (err) {
     setError(friendlyAuthMessage(err, 'Google sign in failed'));
   }
