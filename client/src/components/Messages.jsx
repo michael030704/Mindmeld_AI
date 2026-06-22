@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Avatar from './Avatar';
 import { getMessages, getMessageRequests, acceptMessageRequest, deleteMessageRequest, blockUser } from '../services/api';
 
@@ -22,6 +22,9 @@ export default function Messages({
   const [acceptedRequests, setAcceptedRequests] = useState(new Set());
   const [unreadCounts, setUnreadCounts] = useState({});
   const messagesEndRef = useRef(null);
+  const messagesCacheRef = useRef({}); // Cache for loaded messages
+  const refreshIntervalRef = useRef(null); // Auto-refresh interval
+  const lastFetchTimeRef = useRef({}); // Track when we last fetched
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -49,24 +52,51 @@ export default function Messages({
       });
   }, [currentUser?.uid]);
 
-  // Load messages from backend when conversation is selected
-  useEffect(() => {
-    if (!selectedUserId || !currentUser?.uid) return;
+  // Load messages with faster polling instead of debounce
+  const loadMessagesNow = useCallback(async (userId) => {
+    if (!userId || !currentUser?.uid) return;
     
+    // Don't fetch more than once per 1 second
+    const lastFetch = lastFetchTimeRef.current[userId] || 0;
+    if (Date.now() - lastFetch < 1000) return;
+    
+    lastFetchTimeRef.current[userId] = Date.now();
     setLoadingMessages(true);
-    getMessages(currentUser.uid, selectedUserId)
-      .then(msgs => {
-        setBackendMessages(prev => ({
-          ...prev,
-          [selectedUserId]: msgs || []
-        }));
-      })
-      .catch(err => {
-        console.error('Failed to load messages:', err);
-        // Continue without backend messages
-      })
-      .finally(() => setLoadingMessages(false));
-  }, [selectedUserId, currentUser?.uid]);
+    
+    try {
+      const messages = await getMessages(currentUser.uid, userId);
+      messagesCacheRef.current[userId] = messages || [];
+      setBackendMessages(prev => ({
+        ...prev,
+        [userId]: messages || []
+      }));
+    } catch (err) {
+      console.error('Failed to load messages:', err);
+      showToast('Could not load messages', 'error');
+    } finally {
+      setLoadingMessages(false);
+    }
+  }, [currentUser?.uid, showToast]);
+
+  // Load messages immediately when conversation selected
+  useEffect(() => {
+    if (!selectedUserId) return;
+    
+    // Load immediately
+    loadMessagesNow(selectedUserId);
+    
+    // Set up auto-refresh every 3 seconds
+    refreshIntervalRef.current = setInterval(() => {
+      loadMessagesNow(selectedUserId);
+    }, 3000);
+    
+    // Cleanup interval on unmount or selection change
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [selectedUserId, loadMessagesNow]);
 
   // Get conversations list - includes both active chats and followed users
   const getConversations = () => {
@@ -331,31 +361,44 @@ export default function Messages({
           <>
             {/* Chat Header */}
             <div className="chat-header">
-              <Avatar 
-                size={40} 
-                name={selectedConv.userName} 
-                photoURL={selectedConv.photoURL} 
-              />
-              <div className="chat-header-info">
-                <h3>{selectedConv.userName}</h3>
-                <small className="online-status">
-                  {(() => {
-                    const user = users.find(u => u.id === selectedUserId);
-                    if (isUserActive && user && isUserActive(user)) {
-                      return '🟢 Online';
-                    } else if (user && formatLastSeen) {
-                      return `Last seen ${formatLastSeen(user)}`;
-                    }
-                    return 'Offline';
-                  })()}
-                </small>
+              <div className="chat-header-left">
+                <Avatar 
+                  size={40} 
+                  name={selectedConv.userName} 
+                  photoURL={selectedConv.photoURL} 
+                />
+                <div className="chat-header-info">
+                  <h3>{selectedConv.userName}</h3>
+                  <small className="online-status">
+                    {(() => {
+                      const user = users.find(u => u.id === selectedUserId);
+                      if (isUserActive && user && isUserActive(user)) {
+                        return '🟢 Online';
+                      } else if (user && formatLastSeen) {
+                        return `Last seen ${formatLastSeen(user)}`;
+                      }
+                      return 'Offline';
+                    })()}
+                  </small>
+                </div>
               </div>
+              <button 
+                className="button secondary small refresh-btn"
+                onClick={() => loadMessagesNow(selectedUserId)}
+                disabled={loadingMessages}
+                title="Refresh messages"
+              >
+                {loadingMessages ? '⟳ Loading...' : '⟳ Refresh'}
+              </button>
             </div>
 
             {/* Messages Area */}
             <div className="messages-thread">
               {loadingMessages && (
-                <div className="loading-indicator">Loading messages...</div>
+                <div className="loading-indicator">
+                  <div className="spinner"></div>
+                  <span>Loading messages...</span>
+                </div>
               )}
               {getDisplayMessages().length > 0 ? (
                 <>

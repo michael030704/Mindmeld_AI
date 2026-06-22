@@ -8,59 +8,63 @@ export default function Home() {
 
   return (
     <div className="home-container">
-      <header className="top-utility">
-        <div className="brand">
-          <h1><img src={logo} alt="MindMeld AI" className="brand-logo"/> MindMeld AI</h1>
-          <p className="brand-sub">Your AI Mentor for Intelligent Learning</p>
+      <header className="home-header">
+        <div className="header-brand">
+          <img src={logo} alt="MindMeld AI" className="header-logo"/> 
+          <h1>MindMeld AI</h1>
         </div>
-        <div className="utility-actions">
-          <Link to="/dashboard" className="btn-utility">Start Learning</Link>
-          <Link to="/dashboard" className="btn-utility">Connect with Others</Link>
+        <nav className="header-nav">
+          <Link to="/dashboard" className="nav-link">Dashboard</Link>
+          <Link to="/dashboard" className="nav-link">Community</Link>
           {currentUser ? (
-            <span className="welcome-inline">Welcome, {currentUser.displayName || currentUser.email}</span>
+            <span className="user-greeting">Hi, {currentUser.displayName || currentUser.email.split('@')[0]}</span>
           ) : (
-            <Link to="/login" className="btn-utility outline">Login / Sign Up</Link>
+            <Link to="/login" className="nav-link btn-nav-primary">Login</Link>
           )}
-        </div>
+        </nav>
       </header>
 
-      <main className="hero-section">
-        <div className="hero-content">
-          <h1 className="hero-title">Learn Smarter with Your AI Mentor</h1>
-          <p className="hero-description">
-            MindMeld AI transforms how you learn by combining intelligent note-taking, AI-powered insights, 
-            and a collaborative community. Create notes, discover connections, get personalized challenges, 
-            and grow alongside other learners.
-          </p>
-          
-          <div className="features">
-            <div className="feature-card">
-              <h3>📝 Intelligent Note-Taking</h3>
-              <p>Create notes with AI analysis. Discover semantic connections and build knowledge maps.</p>
+      <main className="home-hero">
+        <div className="hero-wrapper">
+          <div className="hero-text">
+            <h2>Learn Smarter, Grow Faster</h2>
+            <p>Your AI-powered learning companion that adapts to your pace. Create notes, discover insights, and learn with a supportive community.</p>
+            
+            <div className="hero-features">
+              <div className="feature">
+                <span className="feature-icon">📝</span>
+                <div>
+                  <h4>Smart Notes</h4>
+                  <p>AI-enhanced note taking with semantic analysis</p>
+                </div>
+              </div>
+              <div className="feature">
+                <span className="feature-icon">🧠</span>
+                <div>
+                  <h4>Knowledge Maps</h4>
+                  <p>Visualize connections between concepts</p>
+                </div>
+              </div>
+              <div className="feature">
+                <span className="feature-icon">🎯</span>
+                <div>
+                  <h4>Smart Challenges</h4>
+                  <p>Personalized flashcards and quizzes</p>
+                </div>
+              </div>
+              <div className="feature">
+                <span className="feature-icon">👥</span>
+                <div>
+                  <h4>Community</h4>
+                  <p>Connect and learn with other students</p>
+                </div>
+              </div>
             </div>
-            <div className="feature-card">
-              <h3>🤖 AI Mentor</h3>
-              <p>Get personalized guidance, adaptive challenges, and learning insights tailored to you.</p>
-            </div>
-            <div className="feature-card">
-              <h3>👥 Community Learning</h3>
-              <p>Connect with other learners, share knowledge, message friends, and grow together.</p>
-            </div>
-            <div className="feature-card">
-              <h3>📊 Progress Tracking</h3>
-              <p>Track your learning goals, earn badges, and watch your progress unlock new challenges.</p>
-            </div>
-          </div>
 
-          <div className="cta-buttons">
             {currentUser ? (
-              <Link to="/dashboard" className="btn-primary">
-                Go to Dashboard
-              </Link>
+              <Link to="/dashboard" className="btn-primary-large">Go to Dashboard</Link>
             ) : (
-              <Link to="/login" className="btn-primary">
-                Start Your Learning Journey
-              </Link>
+              <Link to="/login" className="btn-primary-large">Start Learning Free</Link>
             )}
           </div>
         </div>

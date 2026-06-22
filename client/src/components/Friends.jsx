@@ -132,7 +132,6 @@ export default function Friends({
               <div key={user.id} className={`friend-card ${status} ${active ? 'active' : ''}`}>
                 <div className="friend-avatar">
                   <DefaultAvatar size={50} name={user.name} photoURL={user.photoURL} />
-                  {active && <div className="active-indicator"></div>}
                 </div>
 
                 <div className="friend-info">

@@ -6,12 +6,24 @@
     "bio": "",
     "topics": [],
     "joined": "2026-06-04T02:06:31.211Z",
-    "lastSeen": "2026-06-04T02:06:31.211Z",
-    "isOnline": true,
+    "lastSeen": "2026-06-04T02:08:10.551Z",
+    "isOnline": false,
     "followers": [],
     "following": [],
-    "notifications": [],
-    "displayName": "Michael Gimena Saragena"
+    "notifications": []
+  },
+  {
+    "id": "56fvCWEmoNN2qEM1TO73AYJu4JI3",
+    "name": "John Public",
+    "email": "test@example.com",
+    "bio": "",
+    "topics": [],
+    "joined": "2026-06-04T02:08:38.197Z",
+    "lastSeen": "2026-06-04T02:51:43.716Z",
+    "isOnline": false,
+    "followers": [],
+    "following": [],
+    "notifications": []
   },
   {
     "id": "H9MaveoZYcglrDUe256bkSs5P4k2",
@@ -20,8 +32,8 @@
     "bio": "",
     "topics": [],
     "joined": "2026-06-04T01:35:24.043Z",
-    "lastSeen": "2026-06-04T01:39:15.028Z",
-    "isOnline": true,
+    "lastSeen": "2026-06-04T01:42:49.503Z",
+    "isOnline": false,
     "followers": [
       "HkAeD7OXMGew35Zvircu96Sc9BC2"
     ],
@@ -33,30 +45,47 @@
   },
   {
     "id": "HkAeD7OXMGew35Zvircu96Sc9BC2",
-    "name": "CLASH_ GAMING",
+    "name": "I amk Iron Man",
     "email": "doc2007lane@gmail.com",
     "bio": "",
     "topics": [],
-    "joined": "2026-06-04T02:57:03.755Z",
-    "lastSeen": "2026-06-04T02:57:03.762Z",
+    "joined": "2026-06-04T10:57:38.675Z",
+    "lastSeen": "2026-06-04T11:59:36.311Z",
     "isOnline": true,
-    "followers": [],
-    "following": [],
-    "notifications": [],
-    "displayName": "CLASH_ GAMING"
+    "followers": [
+      "ucO4c8nR6ucr5T0BtB5VoL5D5ak1"
+    ],
+    "following": [
+      "ucO4c8nR6ucr5T0BtB5VoL5D5ak1"
+    ],
+    "notifications": []
   },
   {
-    "id": "56fvCWEmoNN2qEM1TO73AYJu4JI3",
-    "name": "John Public",
+    "id": "QWSSgxZLhBMUy4Aoswa78TITpl63",
+    "name": "Account no Doubt",
+    "email": "doubt@gmail.com",
     "bio": "",
     "topics": [],
-    "email": "test@example.com",
-    "joined": "2026-06-04T02:08:38.197Z",
-    "lastSeen": "2026-06-04T02:08:38.197Z",
-    "isOnline": true,
-    "displayName": "John Public",
+    "joined": "2026-06-04T11:04:00.100Z",
+    "lastSeen": "2026-06-04T11:09:46.158Z",
+    "isOnline": false,
     "followers": [],
     "following": [],
+    "notifications": []
+  },
+  {
+    "id": "ucO4c8nR6ucr5T0BtB5VoL5D5ak1",
+    "name": "he he he",
+    "email": "hema@gmail.com",
+    "bio": "",
+    "topics": [],
+    "joined": "2026-06-04T11:10:03.740Z",
+    "lastSeen": "2026-06-04T11:59:36.838Z",
+    "isOnline": true,
+    "followers": [],
+    "following": [
+      "HkAeD7OXMGew35Zvircu96Sc9BC2"
+    ],
     "notifications": []
   }
 ]
