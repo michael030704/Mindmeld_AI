@@ -15,5 +15,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false
+  },
+  define: {
+    'import.meta.env.VITE_API_URL': JSON.stringify(
+      process.env.VITE_API_URL || 'https://mindmeldai-backend.onrender.com/api'
+    )
   }
 })
