@@ -237,18 +237,25 @@ export default function Messages({
     const backend = backendMessages[selectedUserId] || [];
     const local = selectedConv.messages || [];
     
-    // Merge backend and local messages, avoiding duplicates
-    const merged = [...backend];
-    const backendIds = new Set(backend.map(m => m.id));
+    // Create a map of messages by text + timestamp for deduplication
+    const messageMap = new Map();
     
-    // Add local messages that aren't in backend
+    // Add backend messages first (they're the source of truth)
+    backend.forEach(msg => {
+      const key = `${msg.from || msg.sender}:${msg.text}:${msg.ts}`;
+      messageMap.set(key, msg);
+    });
+    
+    // Add local messages, but only if they're not already in the backend
     local.forEach(msg => {
-      if (!backendIds.has(msg.id)) {
-        merged.push(msg);
+      const key = `${msg.from || msg.sender}:${msg.text}:${msg.ts}`;
+      if (!messageMap.has(key)) {
+        messageMap.set(key, msg);
       }
     });
     
-    // Sort by timestamp
+    // Convert back to array and sort by timestamp
+    const merged = Array.from(messageMap.values());
     return merged.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
   };
 

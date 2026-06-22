@@ -396,19 +396,33 @@ export default function Dashboard() {
   const sendChatMessage = async (toUserId, text) => {
     try {
       const { sendMessage } = await import('../services/api');
-      // Send to backend
-      await sendMessage(currentUser?.uid, toUserId, text);
       
-      // Update local state for immediate UI feedback
+      // Create message with temporary ID
+      const tempId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
       const msg = {
+        id: tempId,
         sender: currentUser?.displayName || 'You',
+        from: currentUser?.uid,
         text,
         ts: new Date().toISOString()
       };
+      
+      // Add to local state immediately for UI feedback (don't wait for backend)
       setChats(prev => ({
         ...prev,
         [toUserId]: [...(prev[toUserId] || []), msg]
       }));
+      
+      // Send to backend (fire and forget for better UX)
+      sendMessage(currentUser?.uid, toUserId, text).catch(error => {
+        console.error('Failed to send message:', error);
+        showToast('Failed to send message', 'error');
+        // Remove from local state if send failed
+        setChats(prev => ({
+          ...prev,
+          [toUserId]: (prev[toUserId] || []).filter(m => m.id !== tempId)
+        }));
+      });
     } catch (error) {
       console.error('Failed to send message:', error);
       showToast('Failed to send message', 'error');
