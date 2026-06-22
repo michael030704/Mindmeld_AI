@@ -1119,7 +1119,7 @@ app.post('/api/ai', async (req, res) => {
     });
   }
 
-  // --- GROQ INTEGRATION ---
+  // --- GROQ INTEGRATION WITH RETRY LOGIC ---
   if (AI_PROVIDER === 'groq') {
     if (!GROQ_KEY) {
       console.warn('GROQ_API_KEY not configured — returning local fallback response');
@@ -1130,7 +1130,6 @@ app.post('/api/ai', async (req, res) => {
       });
     }
 
-    // ✅ FIXED: Removed trailing spaces from URL
     const GROQ_CHAT_COMPLETIONS_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
     let fetchFn = global.fetch || require('node-fetch').default;
@@ -1138,6 +1137,9 @@ app.post('/api/ai', async (req, res) => {
       try { fetchFn = require('node-fetch'); } catch (e) { /* ignore */ }
     }
     if (!fetchFn) return res.status(500).json({ error: 'No fetch available on server' });
+
+    // Helper function: Sleep for exponential backoff
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     try {
       let validModel = model;
@@ -1152,14 +1154,42 @@ app.post('/api/ai', async (req, res) => {
       console.log('[AI proxy] forwarding to Groq:', GROQ_CHAT_COMPLETIONS_URL);
       console.log('[AI proxy] using model:', validModel);
 
-      const groqRes = await fetchFn(GROQ_CHAT_COMPLETIONS_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GROQ_KEY}`
-        },
-        body: JSON.stringify(groqPayload)
-      });
+      // ✅ RETRY LOGIC WITH EXPONENTIAL BACKOFF FOR 429 ERRORS
+      const MAX_RETRIES = 3;
+      let lastError = null;
+      let groqRes = null;
+
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          groqRes = await fetchFn(GROQ_CHAT_COMPLETIONS_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${GROQ_KEY}`
+            },
+            body: JSON.stringify(groqPayload)
+          });
+
+          // If 429, wait and retry
+          if (groqRes.status === 429) {
+            const retryAfter = parseInt(groqRes.headers?.get?.('retry-after') || '1', 10);
+            const waitTime = Math.min(retryAfter * 1000, (Math.pow(2, attempt) * 1000) + Math.random() * 1000);
+            console.warn(`[Groq] Rate limited (429). Attempt ${attempt + 1}/${MAX_RETRIES}. Retrying after ${waitTime}ms...`);
+            await sleep(waitTime);
+            continue; // Retry
+          }
+
+          // If not 429, break out of retry loop
+          break;
+        } catch (err) {
+          lastError = err;
+          if (attempt < MAX_RETRIES - 1) {
+            const waitTime = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+            console.warn(`[Groq] Fetch error on attempt ${attempt + 1}/${MAX_RETRIES}. Retrying after ${waitTime}ms...`, err.message);
+            await sleep(waitTime);
+          }
+        }
+      }
 
       const groqText = await groqRes.text();
       if (!groqRes.ok) {
@@ -1171,13 +1201,15 @@ app.post('/api/ai', async (req, res) => {
             detail: 'Invalid or missing Groq API key' 
           });
         }
+        // For 429 after retries or other errors, return graceful fallback
         let parsed;
         try { parsed = JSON.parse(groqText); } catch (e) { parsed = { raw: groqText }; }
         return res.json({ 
           id: `local_fallback_${Date.now()}`, 
-          text: `AI proxy fallback: Groq returned ${groqRes.status}`, 
+          text: `AI proxy fallback: Groq returned ${groqRes.status}. Please try again in a moment.`, 
           rawError: parsed, 
-          fallback: true 
+          fallback: true,
+          retryable: groqRes.status === 429
         });
       }
 

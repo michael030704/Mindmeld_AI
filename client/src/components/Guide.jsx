@@ -82,7 +82,8 @@ Provide helpful, actionable advice. Keep responses brief (2-3 sentences max). En
           id: `mentor_${Date.now()}`,
           text: response.text,
           type: 'mentor',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          isFallback: response.fallback
         };
 
         setMentorSystem(prev => ({
@@ -90,11 +91,25 @@ Provide helpful, actionable advice. Keep responses brief (2-3 sentences max). En
           mentorSession: [...(prev.mentorSession || []), mentorResponse],
           xp: (prev.xp || 0) + 5  // Award XP for interaction
         }));
+
+        // Show warning if this is a fallback response due to rate limiting
+        if (response.fallback && response.retryable) {
+          showToast('AI is busy - using cached response. Try again in a moment.', 'warning');
+        } else if (response.fallback) {
+          showToast('Using AI fallback response', 'info');
+        }
       } else {
         showToast('No response from AI', 'error');
       }
     } catch (error) {
-      showToast('Failed to get mentor response', 'error');
+      const errorMsg = error.message || 'Failed to get mentor response';
+      if (errorMsg.includes('already in progress')) {
+        showToast('Please wait for the previous message...', 'warning');
+      } else if (errorMsg.includes('rate') || errorMsg.includes('429')) {
+        showToast('Too many requests. Please wait a moment and try again.', 'warning');
+      } else {
+        showToast(errorMsg, 'error');
+      }
     } finally {
       setIsTyping(false);
     }

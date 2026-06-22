@@ -117,9 +117,30 @@ export const verifyOtpOnly = async (email, code) => {
 };
 
 // AI endpoint - calls the backend which proxies to Groq or OpenAI
+// ✅ RATE LIMIT PROTECTION
+let lastAIRequestTime = 0;
+const AI_MIN_DELAY = 1000; // Minimum 1 second between AI requests
+let aiRequestInProgress = false;
+
 export const callAI = async (messages, model = 'llama3-8b-8192', maxTokens = 512) => {
   try {
-    return await makeRequest('/ai', {
+    // Prevent concurrent AI requests
+    if (aiRequestInProgress) {
+      throw new Error('AI request already in progress. Please wait...');
+    }
+
+    // Enforce minimum delay between requests to avoid rate limiting
+    const timeSinceLastRequest = Date.now() - lastAIRequestTime;
+    if (timeSinceLastRequest < AI_MIN_DELAY) {
+      const delayNeeded = AI_MIN_DELAY - timeSinceLastRequest;
+      console.log(`[API] Throttling AI request: waiting ${delayNeeded}ms`);
+      await new Promise(resolve => setTimeout(resolve, delayNeeded));
+    }
+
+    aiRequestInProgress = true;
+    lastAIRequestTime = Date.now();
+
+    const response = await makeRequest('/ai', {
       method: 'POST',
       body: JSON.stringify({
         messages,
@@ -127,7 +148,11 @@ export const callAI = async (messages, model = 'llama3-8b-8192', maxTokens = 512
         maxTokens,
       }),
     });
+
+    aiRequestInProgress = false;
+    return response;
   } catch (error) {
+    aiRequestInProgress = false;
     throw error;
   }
 };
