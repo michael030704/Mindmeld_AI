@@ -4,7 +4,7 @@
   "description": "Backend API for Firebase React App",
   "main": "server.js",
   "scripts": {
-    "build": "cd ../client && npm install && npm run build",
+    "build": "cd ../client && NODE_ENV=production npm install && NODE_ENV=production npm run build",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
