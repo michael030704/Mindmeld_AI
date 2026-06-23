@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../firebase/config';
 import { doc, getDoc, updateDoc, setDoc, collection, onSnapshot } from 'firebase/firestore';
 import { updateUserOnlineStatus } from '../services/api';
+import { sanitizeFirestoreData } from '../utils/firestoreUtils';
 import './Dashboard.css';
 
 // Import feature components
@@ -243,7 +244,7 @@ export default function Dashboard() {
       try {
         const uid = currentUser.uid;
         const meRef = doc(db, 'users', uid);
-        await updateDoc(meRef, {
+        const saveData = sanitizeFirestoreData({
           notes,
           flashcards,
           mentorSystem,
@@ -251,16 +252,10 @@ export default function Dashboard() {
           followers,
           chats,
           preferences: { theme }
-        }).catch(() => {
-          setDoc(meRef, {
-            notes,
-            flashcards,
-            mentorSystem,
-            following,
-            followers,
-            chats,
-            preferences: { theme }
-          }, { merge: true });
+        });
+
+        await updateDoc(meRef, saveData).catch(() => {
+          setDoc(meRef, saveData, { merge: true });
         });
       } catch (e) {
         console.warn('Auto-save failed', e);

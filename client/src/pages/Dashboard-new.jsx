@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../firebase/config';
 import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { sanitizeFirestoreData } from '../utils/firestoreUtils';
 import './Dashboard.css';
 
 // Import components
@@ -102,15 +103,17 @@ export default function Dashboard() {
       if (!currentUser?.uid || !db) return;
       try {
         const meRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(meRef, { 
+        const saveData = sanitizeFirestoreData({ 
           notes, 
           flashcards, 
           mentorSystem,
           following,
           chats,
           preferences: { theme }
-        }).catch(() => {
-          setDoc(meRef, { notes, flashcards, mentorSystem, following, chats, preferences: { theme } }, { merge: true });
+        });
+
+        await updateDoc(meRef, saveData).catch(() => {
+          setDoc(meRef, saveData, { merge: true });
         });
       } catch (e) {
         console.warn('Auto-save failed', e);
